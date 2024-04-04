@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 # Python
-from typing import Tuple, Union, List, Optional
+from typing import Tuple, List, Optional
 
 # ROS
 try:
@@ -41,10 +41,15 @@ from .loggers import get_logger
 logger = get_logger(__name__)
 
 class Pose:
+    """
+    Pose class for 3D space.
+
+    A `Pose` is defined by a 3x3 rotation matrix and a 3x1 translation vector.
+    """
 
     # Default constructor
     def __init__(self, R: NDArray = np.eye(3),
-                 t: Union[NDArray, List] = np.zeros(3),
+                 t: NDArray | List = np.zeros(3),
                  tol: float = 1e-12) -> Pose:
         """
         Default constructor of the `Pose` class.
@@ -67,23 +72,23 @@ class Pose:
 
         Requirements:
         - 3x3 real matrix
-        - rotation matrix, i.e. R^T @ R = I
+        - orthogonal matrix, i.e. R^T @ R = I
         - right handed, i.e. det(R) = +1
         """
         assert R.shape == (3,3)
         assert np.abs(np.linalg.det(R) - 1) < tol
         assert np.all(np.abs((R.T @ R - np.eye(3))) < tol)
-        self.__R = R.copy()
+        scipy_rotation = Rotation.from_matrix(R.copy())
+        self.__R = scipy_rotation.as_matrix()
         self.__R.flags.writeable = False # Make read-only
         self.__inverse = Pose._compute_inverse(self)
-        self.__quat_wxyz = \
-            Rotation.from_matrix(self.R.copy()).as_quat()[[3, 0, 1, 2]]
+        self.__quat_wxyz = scipy_rotation.as_quat()[[3, 0, 1, 2]]
         self.__quat_xyzw = self.__quat_wxyz[[1,2,3,0]]
         self.__quat_wxyz.flags.writeable = False # Make read-only
         self.__quat_xyzw.flags.writeable = False # Make read-only
 
 
-    def set_t(self, t: Union[NDArray, List]):
+    def set_t(self, t: NDArray | List):
         """Set the translation vector t"""
         t = np.squeeze(np.array(t)).astype(float)
         assert t.shape == (3,)
@@ -171,7 +176,7 @@ class Pose:
 
 
     @t.setter
-    def t(self, t: Union[NDArray, List]):
+    def t(self, t: NDArray | List):
         """Set the translation vector t."""
         self.set_t(t)
 
@@ -332,8 +337,8 @@ class Pose:
 
 
     @staticmethod
-    def from_rotation_angle_and_axis(angle: float, axis: Union[NDArray, List],
-                                     t: Union[NDArray, List] = np.zeros(3),
+    def from_rotation_angle_and_axis(angle: float, axis: NDArray | List,
+                                     t: NDArray | List = np.zeros(3),
                                      degrees: Optional[bool] = False) \
                                           -> Pose:
         """
@@ -357,8 +362,8 @@ class Pose:
 
 
     @staticmethod
-    def from_rotation_vector(rot_vec: Union[NDArray, List],
-                             t: Union[NDArray, List]= np.zeros(3)) -> Pose:
+    def from_rotation_vector(rot_vec: NDArray | List,
+                             t: NDArray | List = np.zeros(3)) -> Pose:
         """
         Get a `Pose` from a rotation vector that captures the axis and the angle
         through its norm.
@@ -375,8 +380,8 @@ class Pose:
 
 
     @staticmethod
-    def from_quat_xyzw(q: Union[NDArray, List],
-                       t: Union[NDArray, List] = np.zeros(3)) -> Pose:
+    def from_quat_xyzw(q: NDArray | List,
+                       t: NDArray | List = np.zeros(3)) -> Pose:
         """
         Get a `Pose` from quaternions `q = (x, y, z, w)` and a translation
         vector `t = (x, y, z)`.
@@ -393,8 +398,8 @@ class Pose:
 
 
     @staticmethod
-    def from_quat_wxyz(q: Union[NDArray, List],
-                       t: Union[NDArray, List] = np.zeros(3)) -> Pose:
+    def from_quat_wxyz(q: NDArray | List,
+                       t: NDArray | List = np.zeros(3)) -> Pose:
         """
         Get a `Pose` from quaternions `q = (w, x, y, z)` and a translation
         vector `t = (x, y, z)`.
@@ -410,9 +415,10 @@ class Pose:
     @staticmethod
     def from_matrix(matrix: NDArray, tol: float = 1e-12) -> Pose:
         """
-        Get a `Pose` from a 4x4 homogeneous transormation matrix.
+        Get a `Pose` from a 3x4 or 4x4 homogeneous transformation matrix.
         """
-        assert matrix.shape == (4,4) and "Not a 4x4 homogeneous matrix"
+        assert (matrix.shape == (4,4) or matrix.shape == (3,4)) and \
+               "Not a 3x4 or 4x4 homogeneous matrix"
         return Pose(matrix[:3, :3], matrix[:3, 3], tol=tol)
 
 
@@ -485,7 +491,7 @@ class Pose:
 
 
     # Multiplication operator overload
-    def __mul__(self, x: Union[NDArray, Pose]) -> Union[NDArray, Pose]:
+    def __mul__(self, x: NDArray | Pose) -> NDArray | Pose:
         """
         Multiplication `*` operator overload.
 
@@ -572,7 +578,7 @@ class Pose:
 
 
     @staticmethod
-    def visualize(poses: Union[Pose, List[Pose]], axes: Optional[Axes3D] = None,
+    def visualize(poses: Pose | List[Pose], axes: Optional[Axes3D] = None,
                   scale: Optional[float] = None) -> Axes3D:
         """
         Visualize a list of `Pose` in a 3D matloptlib plot.

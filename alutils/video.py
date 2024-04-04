@@ -1,5 +1,5 @@
 # Typing
-from typing import List, Union
+from typing import List
 
 # Python
 import numpy as np
@@ -17,7 +17,7 @@ from sba.utils.loggers import get_logger
 logger = get_logger(__name__)
 
 if OPENCV_AVAILABLE:
-    def generate_video(images: Union[List[Path], List[str]], video_filename: Union[str, Path], frame_rate: int = 5) -> None:
+    def generate_video(images: List[Path] | List[str], video_filename: str | Path, frame_rate: int = 5) -> None:
 
         if len(images) == 0:
             logger.warning("The images list contains zero images. Not generating any video.")
@@ -43,8 +43,8 @@ if OPENCV_AVAILABLE:
         logger.info(f"Successfully generated video with {len(images)} frames to '{video_filename}'.")
 
 
-    def generate_4_tile_video(images_corners: Union[List[List[Path]], List[List[str]]],
-                               video_filename: Union[str, Path], frame_rate: int = 5) -> None:
+    def generate_4_tile_video(images_corners: List[List[Path]] | List[List[str]],
+                               video_filename: str | Path, frame_rate: int = 5) -> None:
 
         # Checks
         if len(images_corners) != 4:

@@ -1,19 +1,18 @@
 # Python
 import os, os.path, shutil
-from typing import Union
 from pathlib import Path, PosixPath, WindowsPath
 
 # Logging
 from .loggers import get_logger
 logger = get_logger(__name__)
 
-def create_folders(*args: Union[str, Path]) -> None:
+def create_folders(*args: str | Path) -> None:
     for folder in args:
         folder = Path(folder)
         assert type(folder) == PosixPath or type(folder) == WindowsPath
         create_folder(folder)
 
-def create_folder(folder: Union[str, Path]) -> None:
+def create_folder(folder: str | Path) -> None:
     # Turn into Path
     folder = Path(folder)
 

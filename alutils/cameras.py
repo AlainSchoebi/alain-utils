@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 # Python
-from typing import Tuple, Union
+from typing import Tuple
 
 # Utils
 from .pose import Pose
@@ -131,7 +131,7 @@ class PinholeCamera:
         return dehomogenized((self.K_inv @ coordinates[..., np.newaxis])[..., 0]) # (N, 2)
 
 
-    def project(self, points: NDArray, return_depth: bool = False) -> Union[NDArray, Tuple[NDArray, NDArray]]:
+    def project(self, points: NDArray, return_depth: bool = False) -> NDArray | Tuple[NDArray, NDArray]:
         """
         Project 3D homogeneous (..., 4) or euclidean (..., 3) points from the world frme to the image in 2D pixel
         coordinates (... , 2).

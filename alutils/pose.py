@@ -34,10 +34,10 @@ except ImportError:
 from scipy.spatial.transform import Rotation
 
 # Utils
-from base import homogenized
+from .base import homogenized
 
 # Logging
-from loggers import get_logger
+from .loggers import get_logger
 logger = get_logger(__name__)
 
 class Pose:

@@ -1,6 +1,6 @@
 # Typing
 from __future__ import annotations
-from typing import Optional, Union, List, Tuple, Any
+from typing import Optional, List, Tuple, Any
 
 # Numpy
 import numpy as np
@@ -87,6 +87,19 @@ class BBox:
         """
         return BBox.from_xyxy(
             min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+        )
+
+    @staticmethod
+    def from_points(points: NDArray, mode: XYXYMode = XYXYMode.NORMAL) -> BBox:
+        """
+        Create a `BBox` containing all the provided points.
+
+        Inputs:
+        - points: `NDArray(..., 2)` list of 2D points in format [x, y]
+        """
+        return BBox.from_xyxy(
+            points[..., 0].min(), points[..., 1].min(),
+            points[..., 0].max(), points[..., 1].max()
         )
 
     @staticmethod
@@ -254,7 +267,7 @@ class BBox:
 
     def xyxy_array(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
-        Returns a `NDArray(4,)` (x1, y1, x2, y1).
+        Returns a `NDArray(4,)` [x1, y1, x2, y1].
         """
         return np.array([*self.xyxy_tuple(mode=mode)])
 
@@ -286,7 +299,7 @@ class BBox:
 
     def center_wh_array(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
-        Returns a `NDArray(4,)` (x_center, y_center, w, h).
+        Returns a `NDArray(4,)` [x_center, y_center, w, h].
         """
         return np.array([*self.center_wh_tuple(mode=mode)])
 
@@ -296,7 +309,75 @@ class BBox:
         return self.__str__()
 
     def __str__(self) -> str:
-        return f"BBox(x={self.x}, y={self.y}, w={self.w}, h={self.h})"
+        return f"BBox(x={self.x:.1f}, y={self.y:.1f}, " + \
+               f"w={self.w:.1f}, h={self.h:.1f})"
+
+
+    # Intersection
+    @staticmethod
+    def intersect(bbox_1: BBox, bbox_2: BBox) -> bool:
+        """
+        Return `True` if the `BBox` intersects with another `BBox`.
+        """
+        if bbox_1.x2() > bbox_2.x and bbox_1.y2() > bbox_2.y and \
+           bbox_1.x < bbox_2.x2() and bbox_1.y < bbox_2.y2():
+            return True
+        else:
+            return False
+
+    def intersect_with(self, bbox: BBox) -> bool:
+        """
+        Return `True` if the `BBox` intersects with another `BBox`.
+        """
+        return BBox.intersect(self, bbox)
+
+    @staticmethod
+    def intersection(bbox_1: BBox, bbox_2: BBox,
+                     intersect_check: Optional[bool] = True) -> BBox:
+        """
+        Compute the intersection between two `BBox`.
+
+        Inputs
+        - bbox_1: `BBox` the first bounding box
+        - bbox_2: `BBox` the second bounding box
+
+        Optional inputs
+        - intersect_check: `bool` whether to check if the two `BBox` intersect
+                           or not. If set to `True` the function will raise an
+                           error if the two `BBox` do not intersect. If set to
+                           `False`, the function will return a `BBox` even if
+                           the two `BBox` do not intersect. Default is `True`.
+
+        Returns
+        - intersection: `BBox` the intersection between the two BBoxes
+        """
+        if intersect_check and not BBox.intersect(bbox_1, bbox_2):
+            raise ValueError("The BBoxes do not intersect.")
+
+        return BBox.from_xyxy(
+            max(bbox_1.x, bbox_2.x), max(bbox_1.y, bbox_2.y),
+            min(bbox_1.x2(), bbox_2.x2()), min(bbox_1.y2(), bbox_2.y2())
+        )
+
+    def intersection_with(self, bbox: BBox,
+                      intersect_check: Optional[bool] = True) -> BBox:
+        """
+        Compute the intersection between two `BBox`.
+
+        Inputs
+        - bbox: `BBox` the other BBox to intersect with
+
+        Optional inputs
+        - intersect_check: `bool` whether to check if the two `BBox` intersect
+                           or not. If set to `True` the function will raise an
+                           error if the two `BBox` do not intersect. If set to
+                           `False`, the function will return a `BBox` even if
+                           the two `BBox` do not intersect. Default is `True`.
+
+        Returns
+        - intersection: `BBox` the intersection between the two BBoxes
+        """
+        return BBox.intersection(self, bbox, intersect_check=intersect_check)
 
 
     # Operators
@@ -319,41 +400,48 @@ class BBox:
 
 
     # Cython BBox
-    if CYTHON_BBOX_AVAILABLE:
-        @staticmethod
-        def iou(b_1: BBox, b_2: BBox) -> float:
-            """
-            Compute the Intersection-over-Union (IoU) between two BBoxes.
+    @staticmethod
+    def iou(b_1: BBox, b_2: BBox) -> float:
+        """
+        Compute the Intersection-over-Union (IoU) between two BBoxes.
 
-            Inputs
-            - b_1: `BBox`
-            - b_2: `BBox`
+        Inputs
+        - b_1: `BBox`
+        - b_2: `BBox`
 
-            Returns
-            - iou: `float` the IoU between BBox b_1 and BBox b_2
-            """
+        Returns
+        - iou: `float` the IoU between BBox b_1 and BBox b_2
+        """
+        if not CYTHON_BBOX_AVAILABLE:
+            raise ImportError("Cython BBox is not available.")
 
-            xyxy_1 = b_1.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
-            xyxy_2 = b_2.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
+        xyxy_1 = b_1.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
+        xyxy_2 = b_2.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
 
-            return cython_bbox.bbox_overlaps(xyxy_1, xyxy_2)[0, 0]
+        return cython_bbox.bbox_overlaps(xyxy_1, xyxy_2)[0, 0]
 
 
     # Visualization functions
     if MATPLOTLIB_AVAILABLE :
-        def show(self, axes: Optional[Axes] = None, **args) -> Axes:
+        def show(self, axes: Optional[Axes] = None,
+                       savefig: Optional[str] = None, **args) -> Axes:
             """
             Visualize the BBox in a matloptlib plot.
             """
-            return BBox.visualize(self, axes, **args)
+            return BBox.visualize(self, axes, savefig, **args)
 
         @staticmethod
-        def visualize(bboxes: Union[BBox, List[BBox]],
+        def visualize(bboxes: BBox | List[BBox],
                       axes: Optional[Axes] = None,
+                      savefig: Optional[str] = None,
                       show: Optional[bool] = True,
                       show_text: Optional[bool] = True,
-                      color: Optional[NDArray] = None,
-                      alpha: Optional[float] = None) -> Axes:
+                      color: Optional[NDArray | str] = None,
+                      alpha: Optional[float] = None,
+                      only_borders: Optional[bool] = False,
+                      linewidth: Optional[int] = None,
+                      linestyle: Optional[str] = "solid",
+                      **args) -> Axes:
             """
             Visualize a list of BBoxes in a matloptlib plot.
 
@@ -371,6 +459,11 @@ class BBox:
 
             if not type(bboxes) == list:
                 bboxes = [bboxes]
+
+            # Save figure
+            if savefig is not None:
+                axes = None
+                show = False
 
             # No axes provided
             if axes is None:
@@ -395,20 +488,33 @@ class BBox:
 
             # Default color cycle
             colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-            colors = [matplotlib.colors.to_rgb(color) for color in colors]
+            colors = [np.array(matplotlib.colors.to_rgb(c)) for c in colors]
 
-            if alpha is None: alpha = max(0.2, 1/len(bboxes))
+            # Color
+            if color is not None:
+                if isinstance(color, str):
+                    color = np.array(matplotlib.colors.to_rgb(color))
+
+            # Alpha
+            if alpha is None and len(bboxes) > 0:
+                alpha = max(0.2, 1/len(bboxes))
 
             # Plot
             bbox: BBox
+            if linewidth is None:
+                linewidth = 2 if only_borders else 1
             for i, bbox in enumerate(bboxes):
 
                 c = colors[i%len(colors)] if color is None else color
 
+                facecolor = c if not only_borders else 'none'
+                edgecolor = c if only_borders else 0.7 * c
+
                 # Rectangle
                 rectangle = matplotlib.patches.Rectangle(
                     (bbox.x, bbox.y), bbox.w, bbox.h, alpha=alpha,
-                    edgecolor=np.array(c) * 0.7, facecolor=c,
+                    edgecolor=edgecolor, facecolor=facecolor,
+                    linewidth=linewidth, linestyle=linestyle
                    )
                 ax.add_patch(rectangle)
 
@@ -430,5 +536,8 @@ class BBox:
 
                 # Show
                 if show: plt.show()
+
+            if savefig:
+                fig.savefig(savefig)
 
             return ax

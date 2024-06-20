@@ -9,22 +9,22 @@ from numpy.typing import NDArray
 # Python
 from enum import Enum
 
+# Utils
+from .decorators import requires_package
+
 # Matplotlib
 try:
     import matplotlib
     import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
-    MATPLOTLIB_AVAILABLE = True
 except ImportError:
-    MATPLOTLIB_AVAILABLE = False
+    pass
 
 # Cython BBox
 try:
     import cython_bbox
-    CYTHON_BBOX_AVAILABLE = True
 except ImportError:
-    CYTHON_BBOX_AVAILABLE = False
-
+    pass
 
 class XYXYMode(Enum):
     """
@@ -401,6 +401,7 @@ class BBox:
 
     # Cython BBox
     @staticmethod
+    @requires_package('cython_bbox')
     def iou(b_1: BBox, b_2: BBox) -> float:
         """
         Compute the Intersection-over-Union (IoU) between two BBoxes.
@@ -412,9 +413,6 @@ class BBox:
         Returns
         - iou: `float` the IoU between BBox b_1 and BBox b_2
         """
-        if not CYTHON_BBOX_AVAILABLE:
-            raise ImportError("Cython BBox is not available.")
-
         xyxy_1 = b_1.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
         xyxy_2 = b_2.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
 
@@ -422,122 +420,123 @@ class BBox:
 
 
     # Visualization functions
-    if MATPLOTLIB_AVAILABLE :
-        def show(self, axes: Optional[Axes] = None,
-                       savefig: Optional[str] = None, **args) -> Axes:
-            """
-            Visualize the BBox in a matloptlib plot.
-            """
-            return BBox.visualize(self, axes, savefig, **args)
+    @requires_package('matplotlib')
+    def show(self, axes: Optional[Axes] = None,
+            savefig: Optional[str] = None, **args) -> Axes:
+        """
+        Visualize the BBox in a matloptlib plot.
+        """
+        return BBox.visualize(self, axes, savefig, **args)
 
-        @staticmethod
-        def visualize(bboxes: BBox | List[BBox],
-                      axes: Optional[Axes] = None,
-                      savefig: Optional[str] = None,
-                      show: Optional[bool] = True,
-                      show_text: Optional[bool] = True,
-                      color: Optional[NDArray | str] = None,
-                      alpha: Optional[float] = None,
-                      only_borders: Optional[bool] = False,
-                      linewidth: Optional[int] = None,
-                      linestyle: Optional[str] = "solid",
-                      **args) -> Axes:
-            """
-            Visualize a list of BBoxes in a matloptlib plot.
+    @staticmethod
+    @requires_package('matplotlib')
+    def visualize(bboxes: BBox | List[BBox],
+                    axes: Optional[Axes] = None,
+                    savefig: Optional[str] = None,
+                    show: Optional[bool] = True,
+                    show_text: Optional[bool] = True,
+                    color: Optional[NDArray | str] = None,
+                    alpha: Optional[float] = None,
+                    only_borders: Optional[bool] = False,
+                    linewidth: Optional[int] = None,
+                    linestyle: Optional[str] = "solid",
+                    **args) -> Axes:
+        """
+        Visualize a list of BBoxes in a matloptlib plot.
 
-            Inputs
-            - bboxes: list of `BBox` to plot
+        Inputs
+        - bboxes: list of `BBox` to plot
 
-            Optional Inputs
-            - axes: `Axes` matplotlib axes to plot on. If not provided, a new
-                    figure will be created.
-            - show: `bool` whether to show the plot or not. Default is True.
-            - show_text: `bool` whether to show the label of the BBoxes or not.
-            - color: `NDArray(3,)` color of the BBoxes.
-            - alpha: `float` transparency of the BBoxes.
-            """
+        Optional Inputs
+        - axes: `Axes` matplotlib axes to plot on. If not provided, a new
+                figure will be created.
+        - show: `bool` whether to show the plot or not. Default is True.
+        - show_text: `bool` whether to show the label of the BBoxes or not.
+        - color: `NDArray(3,)` color of the BBoxes.
+        - alpha: `float` transparency of the BBoxes.
+        """
 
-            if not type(bboxes) == list:
-                bboxes = [bboxes]
+        if not type(bboxes) == list:
+            bboxes = [bboxes]
 
-            # Save figure
-            if savefig is not None:
-                axes = None
-                show = False
+        # Save figure
+        if savefig is not None:
+            axes = None
+            show = False
 
-            # No axes provided
-            if axes is None:
-                # Create figure
-                fig = plt.figure()
-                ax: Axes = fig.add_subplot()
+        # No axes provided
+        if axes is None:
+            # Create figure
+            fig = plt.figure()
+            ax: Axes = fig.add_subplot()
 
-                # Title
-                ax.set_title(f"BBox{'es' if len(bboxes) > 1 else ''} " +
-                             f"visualization")
+            # Title
+            ax.set_title(f"BBox{'es' if len(bboxes) > 1 else ''} " +
+                            f"visualization")
 
-                # Axis labels
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
-                ax.xaxis.set_ticks_position('top')
-                ax.xaxis.set_label_position('top')
-                ax.invert_yaxis()
+            # Axis labels
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.xaxis.set_ticks_position('top')
+            ax.xaxis.set_label_position('top')
+            ax.invert_yaxis()
 
-            # Axes provided
-            else:
-                ax = axes
+        # Axes provided
+        else:
+            ax = axes
 
-            # Default color cycle
-            colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-            colors = [np.array(matplotlib.colors.to_rgb(c)) for c in colors]
+        # Default color cycle
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        colors = [np.array(matplotlib.colors.to_rgb(c)) for c in colors]
 
-            # Color
-            if color is not None:
-                if isinstance(color, str):
-                    color = np.array(matplotlib.colors.to_rgb(color))
+        # Color
+        if color is not None:
+            if isinstance(color, str):
+                color = np.array(matplotlib.colors.to_rgb(color))
 
-            # Alpha
-            if alpha is None and len(bboxes) > 0:
-                alpha = max(0.2, 1/len(bboxes))
+        # Alpha
+        if alpha is None and len(bboxes) > 0:
+            alpha = max(0.2, 1/len(bboxes))
 
-            # Plot
-            bbox: BBox
-            if linewidth is None:
-                linewidth = 2 if only_borders else 1
-            for i, bbox in enumerate(bboxes):
+        # Plot
+        bbox: BBox
+        if linewidth is None:
+            linewidth = 2 if only_borders else 1
+        for i, bbox in enumerate(bboxes):
 
-                c = colors[i%len(colors)] if color is None else color
+            c = colors[i%len(colors)] if color is None else color
 
-                facecolor = c if not only_borders else 'none'
-                edgecolor = c if only_borders else 0.7 * c
+            facecolor = c if not only_borders else 'none'
+            edgecolor = c if only_borders else 0.7 * c
 
-                # Rectangle
-                rectangle = matplotlib.patches.Rectangle(
-                    (bbox.x, bbox.y), bbox.w, bbox.h, alpha=alpha,
-                    edgecolor=edgecolor, facecolor=facecolor,
-                    linewidth=linewidth, linestyle=linestyle
-                   )
-                ax.add_patch(rectangle)
+            # Rectangle
+            rectangle = matplotlib.patches.Rectangle(
+                (bbox.x, bbox.y), bbox.w, bbox.h, alpha=alpha,
+                edgecolor=edgecolor, facecolor=facecolor,
+                linewidth=linewidth, linestyle=linestyle
+                )
+            ax.add_patch(rectangle)
 
-                # Labels
-                if show_text and (len(bboxes) > 1 or \
-                   hasattr(bbox, "label") or hasattr(bbox, "name")):
-                    label = i
-                    if hasattr(bbox, "name"):
-                        label = bbox.name
-                    elif hasattr(bbox, "label"):
-                        label = bbox.label
-                    ax.text(*bbox.center(), label, ha='center', va='center',
-                            alpha=alpha, color=np.array(c) * 0.7,
-                            fontsize=12)
+            # Labels
+            if show_text and (len(bboxes) > 1 or \
+                hasattr(bbox, "label") or hasattr(bbox, "name")):
+                label = i
+                if hasattr(bbox, "name"):
+                    label = bbox.name
+                elif hasattr(bbox, "label"):
+                    label = bbox.label
+                ax.text(*bbox.center(), label, ha='center', va='center',
+                        alpha=alpha, color=np.array(c) * 0.7,
+                        fontsize=12)
 
-            if axes is None:
-                # Axis parameters
-                ax.axis('equal')
+        if axes is None:
+            # Axis parameters
+            ax.axis('equal')
 
-                # Show
-                if show: plt.show()
+            # Show
+            if show: plt.show()
 
-            if savefig:
-                fig.savefig(savefig)
+        if savefig:
+            fig.savefig(savefig)
 
-            return ax
+        return ax

@@ -11,30 +11,28 @@ from typing import Tuple, List, Optional
 try:
     import geometry_msgs.msg
     import std_msgs.msg
-    ROS_AVAILABLE = True
 except ImportError:
-    ROS_AVAILABLE = False
+    pass
 
 # COLMAP
 try:
     import pycolmap
-    COLMAP_AVAILABLE = True
 except ImportError:
-    COLMAP_AVAILABLE = False
+    pass
 
 # Matplotlib
 try:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    MATPLOTLIB_AVAILABLE = True
 except ImportError:
-    MATPLOTLIB_AVAILABLE = False
+    pass
 
 # SciPy
 from scipy.spatial.transform import Rotation
 
 # Utils
 from .base import homogenized
+from .decorators import requires_package
 
 # Logging
 from .loggers import get_logger
@@ -103,7 +101,6 @@ class Pose:
         """
         Class method that computes and sets the inverse of a `Pose`.
         """
-
         # Create a new instance of the class without calling the constructor
         inv = cls.__new__(cls)
         inv.__R = pose.R.T
@@ -131,10 +128,12 @@ class Pose:
             "Can't set the rotation matrix or the translation vector of the " +
             "inverse of the Pose instance.")
 
+
     # Copy
     def copy(self) -> Pose:
         """Copy the `Pose` instance."""
         return Pose(self.R.copy(), self.t.copy())
+
 
     # Equality
     def __eq__(self, x):
@@ -143,6 +142,7 @@ class Pose:
             return False
 
         return np.abs(self.matrix - x.matrix).max() < 1e-8
+
 
     # Properties and setters
     @property
@@ -423,71 +423,77 @@ class Pose:
 
 
     # ROS constructors and methods
-    if ROS_AVAILABLE:
-        @staticmethod
-        def from_ros_pose(pose_msg: geometry_msgs.msg.Pose) -> Pose:
-            """Get a Pose from a ROS pose"""
-            q = np.array([pose_msg.orientation.w, pose_msg.orientation.x, pose_msg.orientation.y, pose_msg.orientation.z])
-            t = np.array([pose_msg.position.x, pose_msg.position.y, pose_msg.position.z])
-            return Pose.from_quat_wxyz(q, t)
+    @staticmethod
+    @requires_package('rospy')
+    def from_ros_pose(pose_msg: geometry_msgs.msg.Pose) -> Pose:
+        """Get a Pose from a ROS pose"""
+        q = np.array([pose_msg.orientation.w, pose_msg.orientation.x, pose_msg.orientation.y, pose_msg.orientation.z])
+        t = np.array([pose_msg.position.x, pose_msg.position.y, pose_msg.position.z])
+        return Pose.from_quat_wxyz(q, t)
 
 
-        @staticmethod
-        def from_ros_transform(transform_msg: geometry_msgs.msg.Transform) -> Pose:
-            """Get a Pose from a ROS pose"""
-            q = np.array([transform_msg.rotation.w, transform_msg.rotation.x, transform_msg.rotation.y, transform_msg.rotation.z])
-            t = np.array([transform_msg.translation.x, transform_msg.translation.y, transform_msg.translation.z])
-            return Pose.from_quat_wxyz(q, t)
+    @staticmethod
+    @requires_package('rospy')
+    def from_ros_transform(transform_msg: geometry_msgs.msg.Transform) -> Pose:
+        """Get a Pose from a ROS pose"""
+        q = np.array([transform_msg.rotation.w, transform_msg.rotation.x, transform_msg.rotation.y, transform_msg.rotation.z])
+        t = np.array([transform_msg.translation.x, transform_msg.translation.y, transform_msg.translation.z])
+        return Pose.from_quat_wxyz(q, t)
 
 
-        def to_ros_pose(self) -> geometry_msgs.msg.Pose:
-            """Transform the Pose into a ROS pose"""
-            return geometry_msgs.msg.Pose(position=geometry_msgs.msg.Point(*self.t),
-                                      orientation=geometry_msgs.msg.Quaternion(*self.quat_xyzw))
+    @requires_package('rospy')
+    def to_ros_pose(self) -> geometry_msgs.msg.Pose:
+        """Transform the Pose into a ROS pose"""
+        return geometry_msgs.msg.Pose(position=geometry_msgs.msg.Point(*self.t),
+                                    orientation=geometry_msgs.msg.Quaternion(*self.quat_xyzw))
 
 
-        def to_ros_pose_stamped(self, header: std_msgs.msg.Header) -> geometry_msgs.msg.PoseStamped:
-            return geometry_msgs.msg.PoseStamped(header, self.to_ros_pose())
+    @requires_package('rospy')
+    def to_ros_pose_stamped(self, header: std_msgs.msg.Header) -> geometry_msgs.msg.PoseStamped:
+        return geometry_msgs.msg.PoseStamped(header, self.to_ros_pose())
 
 
-        def to_ros_transform(self) -> geometry_msgs.msg.Transform:
-            return geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(*self.t),
-                                           rotation=geometry_msgs.msg.Quaternion(*self.quat_xyzw))
+    @requires_package('rospy')
+    def to_ros_transform(self) -> geometry_msgs.msg.Transform:
+        return geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(*self.t),
+                                        rotation=geometry_msgs.msg.Quaternion(*self.quat_xyzw))
 
 
-        def to_ros_transform_stamped(self, header: std_msgs.msg.Header, child_frame_id: str) \
-            -> geometry_msgs.msg.TransformStamped:
-            return geometry_msgs.msg.TransformStamped(header, child_frame_id, self.to_ros_transform())
+    @requires_package('rospy')
+    def to_ros_transform_stamped(self, header: std_msgs.msg.Header, child_frame_id: str) \
+        -> geometry_msgs.msg.TransformStamped:
+        return geometry_msgs.msg.TransformStamped(header, child_frame_id, self.to_ros_transform())
 
 
     # COLMAP constructors and methods
-    if COLMAP_AVAILABLE:
-        @staticmethod
-        def from_colmap_image(image: pycolmap.Image,
-                              include_name: bool = True) -> Pose:
-            """
-            Get a `Pose` from a COLMAP image.
-            Note: It returns the transformation from camera to world, that is
-                  `t = (tx, ty, tz)` contains the coordinates of the camera in
-                  the world.
-            """
-            pose = Pose.from_quat_wxyz(image.qvec, image.tvec).inverse
-            if include_name: pose.name = image.name
-            return pose
+    @staticmethod
+    @requires_package('pycolmap')
+    def from_colmap_image(image: pycolmap.Image,
+                            include_name: bool = True) -> Pose:
+        """
+        Get a `Pose` from a COLMAP image.
+        Note: It returns the transformation from camera to world, that is
+                `t = (tx, ty, tz)` contains the coordinates of the camera in
+                the world.
+        """
+        pose = Pose.from_quat_wxyz(image.qvec, image.tvec).inverse
+        if include_name: pose.name = image.name
+        return pose
 
 
-        @staticmethod
-        def set_colmap_image_pose(image: pycolmap.Image, pose:Pose) -> None:
-            """
-            Sets the pose of the COLMAP image to the given `Pose`.
-            Note: The given `Pose` must be the transformation from camera to
-                  world, that is `t = (tx, ty, tz)` contains the coordinates of
-                  the camera in the world.
-            """
-            q = pose.inverse.quat_wxyz
-            t = pose.inverse.t
-            image.qvec, image.tvec = q, t
-            return
+    @staticmethod
+    @requires_package('pycolmap')
+    def set_colmap_image_pose(image: pycolmap.Image, pose:Pose) -> None:
+        """
+        Sets the pose of the COLMAP image to the given `Pose`.
+        Note: The given `Pose` must be the transformation from camera to
+                world, that is `t = (tx, ty, tz)` contains the coordinates of
+                the camera in the world.
+        """
+        q = pose.inverse.quat_wxyz
+        t = pose.inverse.t
+        image.qvec, image.tvec = q, t
+        return
 
 
     # Multiplication operator overload
@@ -563,21 +569,17 @@ class Pose:
 
 
     # Visualization functions
-    def show(self, axes: Optional[Axes3D] = None, scale: Optional[float] = None) -> Axes3D:
+    @requires_package('matplotlib')
+    def show(self, axes: Optional[Axes3D] = None,
+             scale: Optional[float] = None) -> Axes3D:
         """
         Visualize the `Pose` in a 3D matloptlib plot.
         """
-        if not MATPLOTLIB_AVAILABLE :
-            logger.error(
-                "Matplotlib is not available. Can't visualize the Pose."
-            )
-            raise ImportError(
-                "Matplotlib is not available. Can't visualize the Pose."
-            )
         return Pose.visualize(self, axes, scale)
 
 
     @staticmethod
+    @requires_package('matplotlib')
     def visualize(poses: Pose | List[Pose], axes: Optional[Axes3D] = None,
                   scale: Optional[float] = None) -> Axes3D:
         """
@@ -586,14 +588,6 @@ class Pose:
         Inputs:
         - poses: `Pose` or `List[Pose]` pose(s) to plot
         """
-        if not MATPLOTLIB_AVAILABLE :
-            logger.error(
-                "Matplotlib is not available. Can't visualize the Poses."
-            )
-            raise ImportError(
-                "Matplotlib is not available. Can't visualize the Poses."
-            )
-
         if isinstance(poses, Pose):
             poses = [poses]
 
@@ -652,16 +646,16 @@ class Pose:
         return ax
 
 
-    if MATPLOTLIB_AVAILABLE :
-        @staticmethod
-        def _plot_arrow(ax: Axes3D, origin: NDArray, vector: NDArray, **args) -> None:
-            ax.plot3D([origin[0], origin[0] + vector[0]],
-                      [origin[1], origin[1] + vector[1]],
-                      [origin[2], origin[2] + vector[2]],
-                      color="k")
+    @staticmethod
+    @requires_package('matplotlib')
+    def _plot_arrow(ax: Axes3D, origin: NDArray, vector: NDArray, **args) -> None:
+        ax.plot3D([origin[0], origin[0] + vector[0]],
+                    [origin[1], origin[1] + vector[1]],
+                    [origin[2], origin[2] + vector[2]],
+                    color="k")
 
-            # Plot the arrows
-            ax.quiver(origin[0], origin[1], origin[2],
-                      vector[0], vector[1], vector[2],
-                      **args)
-            return
+        # Plot the arrows
+        ax.quiver(origin[0], origin[1], origin[2],
+                    vector[0], vector[1], vector[2],
+                    **args)
+        return

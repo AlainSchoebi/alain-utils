@@ -94,7 +94,7 @@ class BBox:
         """
         Create a `BBox` containing all the provided points.
 
-        Inputs:
+        Inputs
         - points: `NDArray(..., 2)` list of 2D points in format [x, y]
         """
         return BBox.from_xyxy(

@@ -13,7 +13,7 @@ def requires_package(*pkgs: str):
     Decorator to check if the required packages are installed before running a
     function. If a package is not installed, an ImportError is raised.
 
-    Inputs:
+    Inputs
     - pkgs: one or multiple strings, where each string is the name of a package
             that is required for running the function.
     """

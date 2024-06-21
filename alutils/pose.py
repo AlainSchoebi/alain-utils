@@ -52,11 +52,11 @@ class Pose:
         """
         Default constructor of the `Pose` class.
 
-        Inputs:
+        Inputs
         - R: `NDArray(3,3)` 3D rotation matrix
         - t: `NDArray(3,)` or `NDArray(3, 1)` or `List` 3D translation vector
 
-        Optional inputs:
+        Optional inputs
         - tol: `float` tolerance for validating the rotation matrix
         """
         self.set_t(t)
@@ -73,9 +73,16 @@ class Pose:
         - orthogonal matrix, i.e. R^T @ R = I
         - right handed, i.e. det(R) = +1
         """
-        assert R.shape == (3,3)
-        assert np.abs(np.linalg.det(R) - 1) < tol
-        assert np.all(np.abs((R.T @ R - np.eye(3))) < tol)
+        if not R.shape == (3,3):
+            logger.error("The rotation matrix must be a 3x3 matrix.")
+            raise ValueError("The rotation matrix must be a 3x3 matrix.")
+        if not np.abs(np.linalg.det(R) - 1) < tol or \
+           not np.all(np.abs((R.T @ R - np.eye(3))) < tol):
+            logger.error("The rotation matrix must be orthogonal and " +
+                         "right-handed. Try reducing the `tol` parameter.")
+            raise ValueError("The rotation matrix must be orthogonal and " +
+                             "right-handed. Try reducing the `tol` parameter.")
+
         scipy_rotation = Rotation.from_matrix(R.copy())
         self.__R = scipy_rotation.as_matrix()
         self.__R.flags.writeable = False # Make read-only
@@ -89,7 +96,9 @@ class Pose:
     def set_t(self, t: NDArray | List):
         """Set the translation vector t"""
         t = np.squeeze(np.array(t)).astype(float)
-        assert t.shape == (3,)
+        if not t.shape == (3,):
+            logger.error("The translation vector must be a 3D vector either " +
+                         "as a `NDArray(3,)`, `NDArray(3, 1)` or a `List`.")
         self.__t = t.copy() # t : 1D array (3,)
         self.__t.flags.writeable = False # Make read-only
         if hasattr(self, '_Pose__R'): # only if R is already set
@@ -236,7 +245,7 @@ class Pose:
         The direction of the vector is the axis of rotation and its norm is the
         angle of rotation in radians.
 
-        Returns:
+        Returns
         - angle_axis: `NDArray(3,)` the angle-axis 3D vector
         """
         return Rotation.from_matrix(self.R.copy()).as_rotvec()
@@ -247,7 +256,7 @@ class Pose:
         Compute the angle and axis of the rotation matrix of the pose. The angle
         is given in radians and the axis is a unit 3D vector.
 
-        Returns:
+        Returns
         - angle `float`:      the angle in radians
         - axis `NDArray(3,)`: the axis of the rotation (unit vector)
         """
@@ -264,11 +273,11 @@ class Pose:
         Compute the distance error between two `Pose` instances. It computes the
         norm of the difference of the two translations vectors.
 
-        Inputs:
+        Inputs
         - p1: `Pose` first pose
         - p2: `Pose` second pose
 
-        Returns:
+        Returns
         - error: `float` the distance error
         """
         return np.linalg.norm(p1.t - p2.t)
@@ -282,15 +291,15 @@ class Pose:
         angle between the two rotation matrices. The angular error is given in
         radians unless the `degrees` flag is set to True.
 
-        Inputs:
+        Inputs
         - p1: `Pose` first pose
         - p2: `Pose` second pose
 
-        Optional inputs:
+        Optional inputs
         - degrees: `bool` if `True`, the angular error is returned in degrees,
                    otherwise in radians. Default is radians.
 
-        Returns:
+        Returns
         - error: `float` the angular error in radians (or degrees)
         """
         pose_diff = p1 * p2.inverse
@@ -304,15 +313,15 @@ class Pose:
         """
         Compute the distance and angular error between two `Pose` instances.
 
-        Inputs:
+        Inputs
         - p1: `Pose` first pose
         - p2: `Pose` second pose
 
-        Optional inputs:
+        Optional inputs
         - degrees: `bool` if `True`, the angular error is returned in degrees,
                    otherwise in radians. Default is radians.
 
-        Returns:
+        Returns
         - distance_error: `float` the distnace error
         - angular_error:  `float` the angular error in radians (or degrees)
         """
@@ -327,7 +336,7 @@ class Pose:
         Generates a random `Pose` with any orientation and position in the
         bounded cube defined by [-t_bound, +t_bound]^3.
 
-        Optional inputs:
+        Optional inputs
         - t_bound: `float` the bound for the translation vector. Default is 1.
         """
         t = (np.random.random(3) - 0.5) * 2 * t_bound
@@ -344,12 +353,12 @@ class Pose:
         """
         Get a `Pose` from an angle in radians (or degrees) and a 3D axis vector.
 
-        Inputs:
+        Inputs
         - angle: `float` the angle of rotation in radians (or degrees)
         - axis: `NDArray(3,)` or `NDArray(3, 1)` or `List` the axis of rotation.
                 The axis vector does not necessarily need to be normalized.
 
-        Optional inputs:
+        Optional inputs
         - degrees: `bool` if `True`, the angle is given in degrees, otherwise in
                    radians. Default is radians.
         """
@@ -368,7 +377,7 @@ class Pose:
         Get a `Pose` from a rotation vector that captures the axis and the angle
         through its norm.
 
-        Inputs:
+        Inputs
         - rot_vec: `NDArray(3,)` or `NDArray(3, 1)` or `List` the input rotation
                    vector
         """
@@ -378,7 +387,6 @@ class Pose:
         return Pose(R, t)
 
 
-
     @staticmethod
     def from_quat_xyzw(q: NDArray | List,
                        t: NDArray | List = np.zeros(3)) -> Pose:
@@ -386,7 +394,7 @@ class Pose:
         Get a `Pose` from quaternions `q = (x, y, z, w)` and a translation
         vector `t = (x, y, z)`.
 
-        Inputs:
+        Inputs
         - q: `NDArray(4,)` or `List` the input quaternions `(x, y, z, w)`
 
         Note: the quaternion does not necessarily need to be normalized.
@@ -404,7 +412,7 @@ class Pose:
         Get a `Pose` from quaternions `q = (w, x, y, z)` and a translation
         vector `t = (x, y, z)`.
 
-        Inputs:
+        Inputs
         - q: `NDArray(4,)` or `List` the input quaternions `(w, x, y, z)`
 
         Note: the quaternion does not necessarily need to be normalized.
@@ -537,12 +545,12 @@ class Pose:
         """
         Interpolate between two `Pose` instances using SLERP.
 
-        Inputs:
+        Inputs
         - p1: `Pose` first pose
         - p2: `Pose` second pose
         - alpha: `float` interpolation factor in the range [0, 1]
 
-        Returns:
+        Returns
         - pose: `Pose` the interpolated pose between p1 and p2
         """
 
@@ -585,7 +593,7 @@ class Pose:
         """
         Visualize a list of `Pose` in a 3D matloptlib plot.
 
-        Inputs:
+        Inputs
         - poses: `Pose` or `List[Pose]` pose(s) to plot
         """
         if isinstance(poses, Pose):

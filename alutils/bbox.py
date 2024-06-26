@@ -249,7 +249,7 @@ class BBox:
         """
         Returns a `Tuple` (x, y, w, h).
         """
-        return self.x, self.y, self.w, self.h
+        return list(self)
 
     def xywh_array(self) -> NDArray:
         """
@@ -394,6 +394,7 @@ class BBox:
 
         return BBox.from_center_wh(*self.center(),
                                    scale * self.w, scale * self.h)
+
 
     def __rmul__(self, scale: float) -> BBox:
         return self.__mul__(scale)

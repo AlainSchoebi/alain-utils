@@ -95,10 +95,21 @@ class Pose:
 
     def set_t(self, t: NDArray | List):
         """Set the translation vector t"""
+        if not isinstance(t, (np.ndarray, list)):
+            logger.error(
+                f"Expected translation vector to be a 3D vector given as a " +
+                f"`NDArray(3,)`, `NDArray(3, 1)` or a `List`, found {type(t)}."
+            )
+            raise TypeError(
+                f"Expected translation vector to be a 3D vector given as a " +
+                f"`NDArray(3,)`, `NDArray(3, 1)` or a `List`, found {type(t)}."
+            )
         t = np.squeeze(np.array(t)).astype(float)
         if not t.shape == (3,):
-            logger.error("The translation vector must be a 3D vector either " +
-                         "as a `NDArray(3,)`, `NDArray(3, 1)` or a `List`.")
+            logger.error(f"Expected translation vector to be a 3D vector, " +
+                         f"but found shape `{t.shape}`")
+            raise ValueError(f"Expected translation vector to be a 3D " +
+                             f"vector, but found shape `{t.shape}`")
         self.__t = t.copy() # t : 1D array (3,)
         self.__t.flags.writeable = False # Make read-only
         if hasattr(self, '_Pose__R'): # only if R is already set

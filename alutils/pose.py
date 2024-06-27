@@ -42,7 +42,7 @@ class Pose:
     """
     Pose class for 3D space.
 
-    A `Pose` is defined by a 3x3 rotation matrix and a 3x1 translation vector.
+    A `Pose` is defined by a 3x3 rotation matrix and a 3D translation vector.
     """
 
     # Default constructor

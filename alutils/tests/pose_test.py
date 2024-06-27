@@ -22,6 +22,10 @@ try:
 except ImportError:
     COLMAP_AVAILABLE = False
 
+# Logging
+from alutils import get_logger
+get_logger("alutils").setLevel("CRITICAL")
+
 class TestPose(unittest.TestCase):
 
     def test_general(self):

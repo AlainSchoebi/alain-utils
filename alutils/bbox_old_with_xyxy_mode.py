@@ -26,44 +26,58 @@ try:
 except ImportError:
     pass
 
-# Logging
-from .loggers import get_logger
-logger = get_logger(__name__)
+class XYXYMode(Enum):
+    """
+    Enum for the different modes of the BBox. The modes meainly deal with the
+    interpretation of the bottom right corner.
+
+    Modes:
+    - NORMAL: The bounding box bottom right corner is given by the top left
+              corner plus the width and height.
+    - PIXEL:  The bounding box bottom right corner is given by the top left
+              corner plus the width and height minus one. This mode is mostly
+              used with pixel coordinates, where the bottom right corner pixel
+              is included in the BBox. Note that the width and height must be
+              strictly greater than or equal to one.
+    - PIXELNOERROR: Similar to the PIXEL mode, but no error is raised when the
+                    width and height are strictly smaller than one.
+    """
+    NORMAL = 0
+    PIXEL = 1
+    PIXELNOERROR = 2
+
 
 class BBox:
     """
     Bounding box class for 2D space.
 
-    The BBox is defined by the top left corner `(x, y)`, the width `w` and
-    height `h`. All the values are stored as floats and negative width or height
-    are not allowed. The bottom right corner is given by (x + w, y + h).
+    The BBox is defined by the top left corner (x, y), the width w and height h.
+
+    The bottom right corner is given by (x + w, y + h) when the mode is set
+    to `XYXYMode.NORMAL` and by (x + w - 1, y + h - 1) when the the mode is set
+    to `XYXYMode.PIXEL` or `XYXYMode.PIXELNOERROR`.
     """
 
     # Constructors
-    def __init__(self, x: float | int = 0, y: float | int = 0,
-                 w: float | int = 1, h: float | int = 1):
+    def __init__(self, x: float = 0, y: float = 0, w: float = 1, h: float = 1):
         """
         Default constructor for the `BBox` class.
         """
-        try:
-            self.__x = float(x)
-            self.__y = float(y)
-            self.__w = float(w)
-            self.__h = float(h)
-        except Exception as e:
-            logger.error(
-                f"Error while creating BBox with parameters {x, y, w, h}: {e}."
-            )
-            raise ValueError(
-                f"Error while creating BBox with parameters {x, y, w, h}: {e}."
-            )
+        self.__x = float(x)
+        self.__y = float(y)
+        self.__w = float(w)
+        self.__h = float(h)
         self._check()
 
     @staticmethod
-    def from_xyxy(x1: float, y1: float, x2: float, y2: float) -> BBox:
+    def from_xyxy(x1: float, y1: float, x2: float, y2: float,
+                  mode: XYXYMode = XYXYMode.NORMAL) -> BBox:
         """
         Create a `BBox` from top left x-y and bottom right x-y coordinates.
         """
+        if not mode == XYXYMode.NORMAL:
+            raise NotImplementedError("Only mode 'XYXYMode.NORMAL' is " +
+                                      "supported here.")
         return BBox(x1, y1, x2 - x1, y2 - y1)
 
     @staticmethod
@@ -76,7 +90,7 @@ class BBox:
         )
 
     @staticmethod
-    def from_points(points: NDArray) -> BBox:
+    def from_points(points: NDArray, mode: XYXYMode = XYXYMode.NORMAL) -> BBox:
         """
         Create a `BBox` containing all the provided points.
 
@@ -89,11 +103,14 @@ class BBox:
         )
 
     @staticmethod
-    def from_center_wh(x_center: float, y_center: float, w: float, h: float) \
-        -> BBox:
+    def from_center_wh(x_center: float, y_center: float, w: float, h: float,
+                       mode: XYXYMode = XYXYMode.NORMAL) -> BBox:
         """
         Create a `BBox` from the center x-y coordinates, and width and height.
         """
+        if not mode == XYXYMode.NORMAL:
+            raise NotImplementedError("Only mode 'XYXYMode.NORMAL' is " +
+                                      "supported here.")
         return BBox(x_center - 0.5 * w, y_center - 0.5 * h, w, h)
 
     @staticmethod
@@ -102,6 +119,7 @@ class BBox:
         """
         Create a random `BBox`.
         """
+
         w, h = -1, -1
         while w < 0: w = np.random.normal(size_mean, size_std)
         while h < 0: h = np.random.normal(size_mean, size_std)
@@ -124,25 +142,21 @@ class BBox:
         Check if the parameters of the BBox are valid or not.
         """
         if self.w < 0 or self.h < 0:
-            logger.error(
-                "The width and height of a `BBox` can't be negative."
-            )
-            raise ValueError(
-                "The width and height of a `BBox` can't be negative."
-            )
+            raise ValueError("The width and height of a BBox can't be " +
+                             "negative.")
 
     # Properties
     @property
     def x(self) -> float:
        """
-       `float`: Left x coordinate. Equivalent to `x1`.
+       `float`: Left x coordinate.
        """
        return self.__x
 
     @property
     def y(self) -> float:
        """
-       `float`: Top y coordinate. Equivalent to `y1`.
+       `float`: Top y coordinate.
        """
        return self.__y
 
@@ -160,40 +174,43 @@ class BBox:
        """
        return self.__h
 
-    @property
-    def x1(self) -> float:
-       """
-       `float`: Left x coordinate. Equivalent to `x`.
-       """
-       return self.__x
-
-    @property
-    def y1(self) -> float:
-       """
-       `float`: Top y coordinate. Equivalent to `y`.
-       """
-       return self.__y
-
-    @property
-    def x2(self) -> float:
+    # Bottom coordinates depending on mode
+    def x2(self, mode: XYXYMode = XYXYMode.NORMAL) -> float:
         """
         `float`: Right x coordinate. Depends on mode.
         """
-        return self.x + self.w
+        if mode == XYXYMode.NORMAL:
+            return self.x + self.w
+        elif mode == XYXYMode.PIXEL:
+            if self.w < 1:
+                raise ValueError(
+                    f"ERROR: cannot use XYXYMode.PIXEL mode when width is " +
+                    f"strictly smaller than one, i.e. w < 1."
+                )
+            return self.x + self.w - 1
+        elif mode == XYXYMode.PIXELNOERROR:
+            return self.x + self.w - 1
+        else:
+            raise NotImplementedError(f"The mode '{mode}' is not supported.")
 
-    @property
-    def y2(self) -> float:
+    def y2(self, mode: XYXYMode = XYXYMode.NORMAL) -> float:
         """
         `float`: Bottom y coordinate. Depends on mode.
         """
-        return self.y + self.h
+        if mode == XYXYMode.NORMAL:
+            return self.y + self.h
+        elif mode == XYXYMode.PIXEL:
+            if self.h < 1:
+                raise ValueError(
+                    f"ERROR: cannot use XYXYMode.PIXEL mode when height is " +
+                    f"strictly smaller than one, i.e. h < 1."
+                )
+            return self.y + self.h - 1
+        elif mode == XYXYMode.PIXELNOERROR:
+            return self.y + self.h - 1
+        else:
+            raise NotImplementedError(f"The mode '{mode}' is not supported.")
 
-    @property
-    def area(self) -> float:
-        """
-        `float`: Area of the bounding box.
-        """
-        return self.w * self.h
 
     # Equality
     def __eq__(self, x: Any):
@@ -211,7 +228,7 @@ class BBox:
 
 
     # Methods
-    def corners(self) -> NDArray:
+    def corners(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
         Returns the four corner coordinates:
           - in a CCW manner when the x-axis points right and the y-axis down
@@ -220,10 +237,10 @@ class BBox:
         Returns
         - corners: `NDArray(4, 2)` array containing the four corners
         """
-        return np.array([[self.x1, self.y1],
-                         [self.x1, self.y2],
-                         [self.x2, self.y2],
-                         [self.x2, self.y1]])
+        return np.array([[            self.x,             self.y],
+                         [            self.x, self.y2(mode=mode)],
+                         [self.x2(mode=mode), self.y2(mode=mode)],
+                         [self.x2(mode=mode),             self.y]])
 
 
     def xywh_tuple(self) -> Tuple[float, float, float, float]:
@@ -239,48 +256,50 @@ class BBox:
         return np.array([*self.xywh_tuple()])
 
 
-    def xyxy_tuple(self) -> Tuple[float, float, float, float]:
+    def xyxy_tuple(self, mode: XYXYMode = XYXYMode.NORMAL) \
+          -> Tuple[float, float, float, float]:
         """
         Returns a `Tuple` (x1, y1, x2, y1).
         """
-        return self.x1, self.y1, self.x2, self.y2
+        return self.x, self.y, self.x2(mode=mode), self.y2(mode=mode)
 
-    def xyxy_array(self) -> NDArray:
+    def xyxy_array(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
         Returns a `NDArray(4,)` [x1, y1, x2, y1].
         """
-        return np.array([*self.xyxy_tuple()])
+        return np.array([*self.xyxy_tuple(mode=mode)])
 
-    def xyxy_matrix(self) -> NDArray:
+    def xyxy_matrix(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
         Returns the top left and bottom right corner coordinates.
 
         Returns
         - xyxy: `NDArray(2, 2)` array containing the two corners
         """
-        return self.xyxy_array().reshape((2,2))
+        return self.xyxy_array(mode=mode).reshape((2,2))
 
 
-    def center(self) -> NDArray:
+    def center(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
         Returns the center coordinates of the bounding box.
 
         Returns
         - center: `NDArray(2)` array containing the center coordinates
         """
-        return np.mean(self.xyxy_matrix(), axis=0)
+        return np.mean(self.xyxy_matrix(mode=mode), axis=0)
 
-    def center_wh_tuple(self) -> Tuple[float, float, float, float]:
+    def center_wh_tuple(self, mode: XYXYMode = XYXYMode.NORMAL) \
+          -> Tuple[float, float, float, float]:
         """
         Returns a `Tuple` (x_center, y_center, w, h).
         """
-        return *self.center(), self.w, self.h
+        return *self.center(mode=mode), self.w, self.h
 
-    def center_wh_array(self) -> NDArray:
+    def center_wh_array(self, mode: XYXYMode = XYXYMode.NORMAL) -> NDArray:
         """
         Returns a `NDArray(4,)` [x_center, y_center, w, h].
         """
-        return np.array([*self.center_wh_tuple()])
+        return np.array([*self.center_wh_tuple(mode=mode)])
 
 
     # Representations
@@ -360,28 +379,6 @@ class BBox:
 
 
     # Operators
-    def __add__(self, x: Any) -> BBox:
-        if not isinstance(x, (int, float, tuple)):
-            logger.error(
-                f"BBox addition with type {type(x)} is not supported."
-            )
-            raise NotImplementedError(
-                f"BBox addition with type {type(x)} is not supported."
-            )
-        if isinstance(x, (int, float)):
-            return BBox(self.x + x, self.y + x, self.w, self.h)
-        if isinstance(x, tuple):
-            if len(x) == 2 and all(isinstance(i, (int, float)) for i in x):
-                return BBox(self.x + x[0], self.y + x[1], self.w, self.h)
-            else:
-                logger.error(
-                    f"BBox addition with tuple {x} is not supported."
-                )
-                raise NotImplementedError(
-                    f"BBox addition with tuple {x} is not supported."
-                )
-
-
     def __mul__(self, scale: Any) -> BBox:
         """
         Scale the bounding box by a scalar.
@@ -398,12 +395,6 @@ class BBox:
 
 
     def __rmul__(self, scale: float) -> BBox:
-        """
-        Scale the bounding box by a scalar.
-
-        Inputs
-        - scale: `float` or `int` scale value
-        """
         return self.__mul__(scale)
 
 
@@ -421,10 +412,8 @@ class BBox:
         Returns
         - iou: `float` the IoU between BBox b_1 and BBox b_2
         """
-        # Format for cython: xyxy coordinates with `-1` subtracted for the
-        # bottom right corner coordinates
-        xyxy_1 = (b_1.xyxy_array() + np.array([0, 0, -1, -1]))[None, :]
-        xyxy_2 = (b_2.xyxy_array() + np.array([0, 0, -1, -1]))[None, :]
+        xyxy_1 = b_1.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
+        xyxy_2 = b_2.xyxy_array(mode=XYXYMode.PIXEL)[None, :]
 
         return cython_bbox.bbox_overlaps(xyxy_1, xyxy_2)[0, 0]
 

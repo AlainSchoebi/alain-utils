@@ -13,14 +13,23 @@ SO3 = NewType("SO3", NDArray)
 Vector3 = NewType("Vector3", NDArray)
 
 def Exp(rot_vec: Vector3) -> SO3:
-    rot_vec = np.squeeze(np.array(rot_vec)).astype(float)
-    assert rot_vec.shape == (3,)
+    try:
+        rot_vec = np.squeeze(np.array(rot_vec)).astype(float)
+        assert rot_vec.shape == (3,)
+    except Exception as e:
+        raise ValueError(f"Invalid input `rot_vec`. Could not be cast to a "
+                         f"`NDArray(3,)`. Error: {e}.")
     R = Rotation.from_rotvec(rot_vec).as_matrix()
     return R
 
 
 def Log(R: SO3) -> Vector3:
-    rot_vec = Rotation.from_matrix(R).as_rotvec()
+    if not isinstance(R, np.ndarray):
+        raise TypeError("R must be a numpy array.")
+    if not R.shape == (3, 3):
+        raise ValueError("R must be a 3x3 matrix.")
+
+    rot_vec = Rotation.from_matrix(R.copy()).as_rotvec()
     return rot_vec
 
 

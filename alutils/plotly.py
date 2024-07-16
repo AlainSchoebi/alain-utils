@@ -302,7 +302,7 @@ def build_plotly_plot(
 
     # Save HTML file
     if output_html is not None:
-        fig.write_html(str(output_html))
+        fig.write_html(str(output_html), include_mathjax='cdn')
 
     # Open browser
     if open_browser:

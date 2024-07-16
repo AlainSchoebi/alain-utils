@@ -6,9 +6,6 @@ from typing import Optional, List, Tuple, Any
 import numpy as np
 from numpy.typing import NDArray
 
-# Python
-from enum import Enum
-
 # Utils
 from .decorators import requires_package
 

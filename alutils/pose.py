@@ -276,6 +276,52 @@ class Pose:
         axis = angle_axis / angle
         return angle, axis
 
+    def euler_angles(self, seq: str, degrees: Optional[bool] = False) \
+        -> NDArray:
+
+        """
+        Returns the Euler angles from the rotation matrix of the pose. Any
+        rotation can be represented by three consecutive rotations about the
+        axes of a coordinate system. The Euler angles are the angles of these
+        rotations.
+
+        Due to Gimbal lock issue, the Euler angles are not always unique. In
+        this case, the function will trigger a warning. TODO???
+
+        Example
+        Given a rotation matrix R, and the sequence 'xyz', the function will
+        return the Euler angles [alpha, beta, gamma] such that:
+            R = R_x(alpha) @ R_y(beta) @ R_z(gamma)
+        where R_x(alpha) represents a rotation of angle alpha about the x-axis.
+
+        Inputs
+        - seq: `str` the sequence of axis of rotation. The string must contain
+               exactly 3 characters belonging to the set 'x', 'y', 'z'. Adjacent
+               axes cannot be the same.
+
+        Returns
+        - angles: `NDArray(3,)` the Euler angles in radians (or degrees)
+
+        Note
+        The SciPy library distinguishes between internal and external rotations.
+        """
+
+        if not len(seq) == 3 or not all([c in 'xyz' for c in seq]) or \
+            seq[0] == seq[1] or seq[1] == seq[2]:
+            logger.error(
+                "The sequence of axes must be a string of three characters " +
+                "belonging to the set {'x', 'y', 'z'}. It can't same " +
+                "adjacent axes."
+            )
+            raise ValueError(
+                "The sequence of axes must be a string of three characters " +
+                "belonging to the set {'x', 'y', 'z'}. It can't same " +
+                "adjacent axes."
+            )
+
+        return Rotation.from_matrix(self.R.copy()) \
+               .as_euler(seq.upper(), degrees=degrees)
+
 
     # Pose errors
     @staticmethod
@@ -439,6 +485,48 @@ class Pose:
         assert (matrix.shape == (4,4) or matrix.shape == (3,4)) and \
                "Not a 3x4 or 4x4 homogeneous matrix"
         return Pose(matrix[:3, :3], matrix[:3, 3], tol=tol)
+
+
+    @staticmethod
+    def from_euler_angles(angles: Tuple[float] | List[float] | NDArray,
+                          seq: str, degrees: Optional[bool] = False,
+                          t: NDArray | List[float] = np.zeros(3)) -> Pose:
+
+        """
+        Get a `Pose` from 3 Euler angles.
+
+        Example
+        Given 3 Euler angles [alpha, beta, gamma], and the sequence 'xyz', the
+        function will return the Pose with rotation matrix given by:
+            R = R_x(alpha) @ R_y(beta) @ R_z(gamma)
+        where R_x(alpha) represents a rotation of angle alpha about the x-axis.
+
+        Inputs
+        - angles: `NDArray(3,)`, `Tuple` or `List` the Euler angles in radians
+                  (or degrees)
+        - seq: `str` the sequence of axis of rotation. The string must contain
+               exactly 3 characters belonging to the set 'x', 'y', 'z'. Adjacent
+               axes cannot be the same.
+        """
+
+        if not len(seq) == 3 or not all([c in 'xyz' for c in seq]) or \
+            seq[0] == seq[1] or seq[1] == seq[2]:
+            logger.error(
+                "The sequence of axes must be a string of three characters " +
+                "belonging to the set {'x', 'y', 'z'}. It can't same " +
+                "adjacent axes."
+            )
+            raise ValueError(
+                "The sequence of axes must be a string of three characters " +
+                "belonging to the set {'x', 'y', 'z'}. It can't same " +
+                "adjacent axes."
+            )
+
+        angles = np.array(angles)
+        assert len(angles) == 3
+
+        rotation = Rotation.from_euler(seq.upper(), angles, degrees=degrees)
+        return Pose(rotation.as_matrix(), t)
 
 
     # ROS constructors and methods

@@ -49,6 +49,25 @@ class TestPose(unittest.TestCase):
             np.testing.assert_array_almost_equal(Pose.from_quat_wxyz(pose.quat_wxyz * np.array([-1, 1, 1, 1])).R, pose.inverse.R)
             np.testing.assert_array_almost_equal(Pose.from_quat_xyzw(pose.quat_xyzw * np.array([1, 1, 1, -1])).R, pose.inverse.R)
 
+            pose = Pose.random()
+            euler_angles_xyz = pose.euler_angles('xyz')
+            R_x = Pose.from_rotation_angle_and_axis(euler_angles_xyz[0], [1, 0, 0]).R
+            R_y = Pose.from_rotation_angle_and_axis(euler_angles_xyz[1], [0, 1, 0]).R
+            R_z = Pose.from_rotation_angle_and_axis(euler_angles_xyz[2], [0, 0, 1]).R
+            R = R_x @ R_y @ R_z
+            np.testing.assert_array_almost_equal(pose.R, R)
+            np.testing.assert_array_almost_equal(Pose.from_euler_angles(euler_angles_xyz, 'xyz').R, pose.R)
+
+            pose = Pose.random()
+            euler_angles_xyz = pose.euler_angles('zyz')
+            R_0 = Pose.from_rotation_angle_and_axis(euler_angles_xyz[0], [0, 0, 1]).R
+            R_1 = Pose.from_rotation_angle_and_axis(euler_angles_xyz[1], [0, 1, 0]).R
+            R_2 = Pose.from_rotation_angle_and_axis(euler_angles_xyz[2], [0, 0, 1]).R
+            R = R_0 @ R_1 @ R_2
+            np.testing.assert_array_almost_equal(pose.R, R)
+            np.testing.assert_array_almost_equal(Pose.from_euler_angles(euler_angles_xyz, 'zyz').R, pose.R)
+
+
     def test_access_rights(self):
 
         p = Pose()

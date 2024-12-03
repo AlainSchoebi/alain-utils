@@ -438,16 +438,16 @@ class BBox:
     @staticmethod
     @requires_package('matplotlib')
     def visualize(bboxes: BBox | List[BBox],
-                    axes: Optional[Axes] = None,
-                    savefig: Optional[str] = None,
-                    show: Optional[bool] = True,
-                    show_text: Optional[bool] = True,
-                    color: Optional[NDArray | str] = None,
-                    alpha: Optional[float] = None,
-                    only_borders: Optional[bool] = False,
-                    linewidth: Optional[int] = None,
-                    linestyle: Optional[str] = "solid",
-                    **args) -> Axes:
+                  axes: Optional[Axes] = None,
+                  savefig: Optional[str] = None,
+                  show: Optional[bool] = True,
+                  show_text: Optional[bool] = True,
+                  color: Optional[NDArray | str] = None,
+                  alpha: Optional[float] = None,
+                  only_borders: Optional[bool] = False,
+                  linewidth: Optional[int] = None,
+                  linestyle: Optional[str] = "solid",
+                  **args) -> Axes:
         """
         Visualize a list of BBoxes in a matloptlib plot.
 
@@ -458,6 +458,7 @@ class BBox:
         - axes: `Axes` matplotlib axes to plot on. If not provided, a new
                 figure will be created.
         - show: `bool` whether to show the plot or not. Default is True.
+        - savefig:
         - show_text: `bool` whether to show the label of the BBoxes or not.
         - color: `NDArray(3,)` color of the BBoxes.
         - alpha: `float` transparency of the BBoxes.
@@ -479,7 +480,7 @@ class BBox:
 
             # Title
             ax.set_title(f"BBox{'es' if len(bboxes) > 1 else ''} " +
-                            f"visualization")
+                         f"visualization")
 
             # Axis labels
             ax.set_xlabel('x')

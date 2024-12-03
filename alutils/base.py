@@ -1,6 +1,6 @@
 # Typing
 from __future__ import annotations
-from typing import Callable, Any, Tuple, NewType
+from typing import Callable, Any, Tuple, NewType, Literal
 
 # Numpy
 import numpy as np
@@ -48,7 +48,9 @@ def homogenized(vectors: NDArray, fill_value: Any = 1) -> NDArray:
         dtype=vectors.dtype
     )
 
-def normalized(x: NDArray, axis: int = -1) -> NDArray:
+
+def normalized(x: NDArray, axis: int = -1, norm: Literal['L1', 'L2'] = 'L2') \
+    -> NDArray:
     """
     Normalize an array along the provided axis. By default the normalization is
     perfomed along the last axis.
@@ -58,13 +60,21 @@ def normalized(x: NDArray, axis: int = -1) -> NDArray:
 
     Optional Inputs
     - axis: `int` axis along which to normalize the array. Default is `-1`.
+    - norm: `Literal['L1', 'L2']` type of normalization to perform. Default is
+            `L2`.
 
     Returns
     - normalized_x: `NDArray` normalized array
     """
     if np.any(np.linalg.norm(x, axis=axis, keepdims=True) == 0):
         raise ValueError("Error in vector normalization as norm is zero.")
-    return x / np.linalg.norm(x, axis=axis, keepdims=True)
+    if norm == 'L1':
+        return x / np.linalg.norm(x, ord=1, axis=axis, keepdims=True)
+    elif norm == 'L2':
+        return x / np.linalg.norm(x, ord=2, axis=axis, keepdims=True)
+    else:
+        raise TypeError(f"Invalid normalization argument '{norm}.' " +
+                        f"Choose 'L1' or 'L2'.")
 
 
 Model = NewType("Model", Any)

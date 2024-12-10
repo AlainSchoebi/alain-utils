@@ -57,7 +57,8 @@ class Pose:
         - t: `NDArray(3,)` or `NDArray(3, 1)` or `List` 3D translation vector
 
         Optional inputs
-        - tol: `float` tolerance for validating the rotation matrix
+        - tol: `float` tolerance for validating the rotation matrix. Default is
+                1e-12.
         """
         self.set_t(t)
         self.set_R(R, tol)
@@ -73,6 +74,11 @@ class Pose:
         - orthogonal matrix, i.e. R^T @ R = I
         - right handed, i.e. det(R) = +1
         """
+        if not isinstance(R, np.ndarray):
+            logger.error(f"The rotation matrix must be a NumPy array, not " +
+                         f"a `{type(R)}`.")
+            raise TypeError(f"The rotation matrix must be a NumPy array, not " +
+                            f" a `{type(R)}`.")
         if not R.shape == (3,3):
             logger.error("The rotation matrix must be a 3x3 matrix.")
             raise ValueError("The rotation matrix must be a 3x3 matrix.")

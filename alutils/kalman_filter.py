@@ -16,7 +16,6 @@ except ImportError:
 State = NewType("State", NDArray)
 Covariance = NewType("Covariance", NDArray)
 
-
 def prior_update(x_m: State, P_m: Covariance,
                  A: NDArray, b: NDArray, Q: Covariance) \
                    -> Tuple[State, Covariance]:
@@ -32,9 +31,9 @@ def prior_update(x_m: State, P_m: Covariance,
           i.e. x_{k-1|k-1}.
    - P_m: `(n, n)` a posteriori covariance matrix of the state,
            i.e. P_{k-1|k-1}.
-   - A:   `(n, n)` state transition matrix
-   - b:   `(n, 1)` or `(n,)` bias vector
-   - Q:   `(n, n)` process noise covariance matrix
+   - A:   `(n, n)` state transition matrix.
+   - b:   `(n, 1)` or `(n,)` bias vector.
+   - Q:   `(n, n)` process noise covariance matrix.
 
    Outputs
    - x_p: `(n, 1)` or `(n,)` predicted state estimate at the next time step
@@ -60,7 +59,9 @@ def prior_update(x_m: State, P_m: Covariance,
 def measurement_update(x_p: State, P_p: Covariance,
                        z: NDArray, H: NDArray, R: Covariance,
                        KALMAN_GAIN_FORM: Optional[bool] = True,
-                       JOSEPH_FORM: Optional[bool] = False) \
+                       JOSEPH_FORM: Optional[bool] = False,
+                       symmetry_tol: Optional[float] = 1e-8,
+                       invertibility_eps: Optional[float] = 1e-20) \
                          -> Tuple[State, Covariance]:
    """
    Measurement update of the Kalman Filter, also referred to as the a posteriori
@@ -73,16 +74,21 @@ def measurement_update(x_p: State, P_p: Covariance,
    Inputs
    - x_p: `(n, 1)` or `(n,)` prior estimate of the state, i.e. x_{k|k-1}.
    - P_p: `(n, n)` prior covariance matrix of the state, i.e. P_{k|k-1}.
-   - z:   `(m, 1)` or `(m,)` observed measurement, i.e. z_k
-   - H:   `(m, n)` observation matrix
+   - z:   `(m, 1)` or `(m,)` observed measurement, i.e. z_k.
+   - H:   `(m, n)` observation matrix.
    - R:   `(m, m)` measurement noise covariance matrix, symmetric definite
-          postive
-
+          postive.
+   - symmetry_eps: `float` tolerance for checking symmetry of matrices. Default
+                    is `1e-8`.
+   - invertibility_eps: `float` small tolerance for checking invertibility of
+                        matrices. Default is `1e-20`.
    Optional inputs
-   - KALMAN_GAIN_FORM: `bool` flag to use the Kalman gain form
+   - KALMAN_GAIN_FORM: `bool` flag to use the Kalman gain form. Default is
+                       `True`.
    - JOSEPH_FORM:      `bool` flag to use the Joseph form for the covariance
                        update. This only works when using the `KALMAN_GAIN_FORM`
-                       form and improves numerical stability.
+                       form and improves numerical stability. Default is
+                       `False`.
 
    Outputs
    - x_m: `(n, 1)` or `(n,)` a posteriori state estimate after employing the
@@ -101,19 +107,19 @@ def measurement_update(x_p: State, P_p: Covariance,
           "Incorrect input shapes."
 
    # Assertions
-   if np.abs(P_p.T - P_p).max() > 1e-10:
+   if np.abs(P_p.T - P_p).max() > symmetry_tol:
        raise ValueError("The provided prior covariance matrix P_p is not " +
                         "symmetric.")
 
-   if np.abs(R.T - R).max() > 1e-10:
+   if np.abs(R.T - R).max() > symmetry_tol:
        raise ValueError("The provided measurement noise covariance matrix R " +
                         " is not symmetric.")
 
-   if np.linalg.det(P_p) < 1e-10:
+   if np.linalg.det(P_p) < invertibility_eps:
        raise ValueError("The provided prior covariance matrix P_p is not " +
                         "is not invertible.")
 
-   if np.linalg.det(R) < 1e-10:
+   if np.linalg.det(R) < invertibility_eps:
        raise ValueError("The provided measurement noise covariance matrix R " +
                         " is not invertible.")
 

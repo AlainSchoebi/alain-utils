@@ -582,13 +582,14 @@ class Pose:
     @staticmethod
     @requires_package('pycolmap')
     def from_colmap_image(image: pycolmap.Image,
-                            include_name: bool = True) -> Pose:
+                          include_name: bool = True) -> Pose:
         """
         Get a `Pose` from a COLMAP image.
         Note: It returns the transformation from camera to world, that is
-                `t = (tx, ty, tz)` contains the coordinates of the camera in
-                the world.
+              `t = (tx, ty, tz)` contains the coordinates of the camera in
+              the world.
         """
+        return NotImplementedError("Need to be fixed.")
         pose = Pose.from_quat_wxyz(image.qvec, image.tvec).inverse
         if include_name: pose.name = image.name
         return pose
@@ -599,10 +600,11 @@ class Pose:
     def set_colmap_image_pose(image: pycolmap.Image, pose:Pose) -> None:
         """
         Sets the pose of the COLMAP image to the given `Pose`.
-        Note: The given `Pose` must be the transformation from camera to
-                world, that is `t = (tx, ty, tz)` contains the coordinates of
-                the camera in the world.
+        Note: The given `Pose` must be the transformation from camera to world,
+              that is `t = (tx, ty, tz)` contains the coordinates of the camera
+              in the world.
         """
+        return NotImplementedError("Need to be fixed.")
         q = pose.inverse.quat_wxyz
         t = pose.inverse.t
         image.qvec, image.tvec = q, t

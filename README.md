@@ -21,5 +21,5 @@ Some utilities might only be available when additional packages are installed, s
 To run tests:
 ```sh
 pip install pytest
-pytest
+python -m pytest
 ```

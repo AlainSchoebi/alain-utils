@@ -17,8 +17,8 @@ dependencies = [
     "scipy",
 ]
 
-#[tool.setuptools]
-#packages = { find = { where = ["alutils"] } }
+[tool.setuptools]
+packages = { find = { where = ["alutils"] } }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]        # Directory where your tests are located

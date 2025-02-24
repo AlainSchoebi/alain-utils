@@ -124,6 +124,8 @@ if ROS_AVAILABLE:
                 Pose.from_ros_pose(pose.to_ros_pose()).matrix, pose.matrix
             )
 
+        assert 78 == 1
+
 if COLMAP_AVAILABLE:
     def test_colmap(self):
         for _ in range(100):

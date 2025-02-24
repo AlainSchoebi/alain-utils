@@ -7,18 +7,26 @@ from typing import List, List, Optional, Tuple
 import math
 
 # Plotly
-import plotly.graph_objects as go
+try:
+    import plotly.graph_objects as go
+except ImportError:
+    pass
 
 # Shapely
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import unary_union
+try:
+    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.ops import unary_union
+except ImportError:
+    pass
 
 # Utils
+from alutils.decorators import requires_package
 from alutils.bbox import BBox
 from alutils.loggers import get_logger
 logger = get_logger(__name__)
 
-def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> List[NDArray]:
+@requires_package("shapely")
+def get_2d_boundary(vertices: NDArray, faces: NDArray) -> List[NDArray]:
     """
     Computes the 2D boundary of a 2D mesh defined by its vertices and faces.
 
@@ -58,6 +66,7 @@ def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> List[NDArray]:
     return boundaries
 
 
+@requires_package("plotly", "shapely")
 def gaussian_1d_traces(
     mu: float, var: float, *values: float, S: int = 100,
     color: Optional[str] = 'cyan') -> List[go.Contour | go.Scatter]:
@@ -131,6 +140,7 @@ def gaussian_1d_traces(
     return traces
 
 
+@requires_package("plotly")
 def gaussian_2d_traces(
     mu: NDArray, cov: NDArray, output_size: BBox, S: int = 100,
     primary_color: str = "cyan", secondary_color: str = "blue",

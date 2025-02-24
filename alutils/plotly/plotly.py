@@ -1,4 +1,4 @@
-# Numpy
+# NumPy
 import numpy as np
 
 # Python
@@ -6,8 +6,11 @@ from typing import Dict, Any, List, List, Optional
 from pathlib import Path
 
 # Plotly
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+try:
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+except ImportError:
+    pass
 
 # Utils
 from alutils.decorators import requires_package

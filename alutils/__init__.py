@@ -1,7 +1,7 @@
 from .base import homogenized, dehomogenized, normalized, ransac
 from .pose import Pose
 from .bbox import BBox
-from .cameras import PinholeCamera
+from .camera import PinholeCamera
 from .folders import create_folder, create_folders
 from .loggers import get_logger
 from . import kalman_filter

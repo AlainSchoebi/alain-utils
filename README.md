@@ -11,7 +11,7 @@ pip install ./alain-utils
 To install the package in editable mode for development:
 ```sh
 git clone git@github.com:AlainSchoebi/alain-utils.git
-pip install -e ./alain-utils[dev]
+pip install -e ./alain-utils
 ```
 
 ## Additional packages

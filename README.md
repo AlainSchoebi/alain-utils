@@ -15,7 +15,7 @@ pip install -e ./alain-utils
 ```
 
 ## Additional packages
-Some utilities might only be available when additional packages are installed, such as matplotlib, pycolmap, cv2, tqdm, rospy and cython-bbox.
+Some utilities might only be available when additional packages are installed, such as matplotlib, pycolmap, cv2, tqdm, rospy, plotly, shapely and cython-bbox.
 
 ## Tests
 To run tests:

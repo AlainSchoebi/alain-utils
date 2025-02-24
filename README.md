@@ -20,7 +20,6 @@ Some utilities might only be available when additional packages are installed, s
 ## Tests
 To run tests:
 ```sh
-pip install pytest
 python -m pytest
 ```
 Note that simply running `pytest` might not work and lead to `ImportError`.

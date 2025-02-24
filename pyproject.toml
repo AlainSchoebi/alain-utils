@@ -11,10 +11,14 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "pytest",
     "numpy",
     "colorama",
-    "scipy"
+    "scipy",
 ]
+
+[tool.setuptools]
+packages = { find = { where = ["alutils"] } }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]        # Directory where your tests are located

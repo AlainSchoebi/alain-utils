@@ -67,6 +67,8 @@ class TestPose(unittest.TestCase):
             np.testing.assert_array_almost_equal(pose.R, R)
             np.testing.assert_array_almost_equal(Pose.from_euler_angles(euler_angles_xyz, 'zyz').R, pose.R)
 
+            np.testing.assert_array_almost_equal(Pose.from_euler_angles(euler_angles_xyz, 'zyz').R, pose.R * 4)
+
 
     def test_access_rights(self):
 

@@ -22,7 +22,6 @@ jobs:
         
     - name: Install package and dependencies
       run: |
-        cd alain-utils
         pip install .
         conda install matplotlib
      

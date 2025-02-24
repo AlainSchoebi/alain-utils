@@ -117,7 +117,7 @@ def test_access_rights():
 
 
 if ROS_AVAILABLE:
-    def test_ros(self):
+    def test_ros():
         for _ in range(100):
             pose = Pose.random()
             np.testing.assert_array_almost_equal(
@@ -127,7 +127,7 @@ if ROS_AVAILABLE:
         assert 78 == 1
 
 if COLMAP_AVAILABLE:
-    def test_colmap(self):
+    def test_colmap():
         for _ in range(100):
             pose = Pose.random()
 

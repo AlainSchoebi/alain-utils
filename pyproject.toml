@@ -9,8 +9,14 @@ description = "Python Alain Utils Package"
 authors = [
     { name = "Alain Schoebi", email = "alain.schoebi@gmx.ch" }
 ]
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "colorama",
     "scipy"
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]        # Directory where your tests are located
+python_files = "test_*.py"   # Matches files like "test_example.py"
+python_functions = "test_*"  # Matches functions like "test_addition"

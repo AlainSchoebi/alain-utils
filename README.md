@@ -23,3 +23,4 @@ To run tests:
 pip install pytest
 python -m pytest
 ```
+Note that simply running `pytest` might not work and lead to `ImportError`.

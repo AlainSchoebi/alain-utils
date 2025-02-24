@@ -21,6 +21,6 @@ dependencies = [
 packages = { find = { where = ["alutils"] } }
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]        # Directory where your tests are located
-python_files = "test_*.py"   # Matches files like "test_example.py"
-python_functions = "test_*"  # Matches functions like "test_addition"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"

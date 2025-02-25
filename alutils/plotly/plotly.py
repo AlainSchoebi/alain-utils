@@ -77,6 +77,11 @@ def build_plotly_plot(
                     if row[jj] is None:
                         col -= 1
                     else:
+                        logger.error(
+                            f"Invalid use of 'colspan'. The entry of the " +
+                            f"plot at `plot[{i}][{jj}] should be `None` or " +
+                            f"inexistent."
+                        )
                         raise ValueError(
                             f"Invalid use of 'colspan'. The entry of the " +
                             f"plot at `plot[{i}][{jj}] should be `None` or " +
@@ -113,6 +118,11 @@ def build_plotly_plot(
                        plot[ii][jj] is None:
                        continue
 
+                    logger.error(
+                        f"Invalid use of 'rowspan' or 'colspan'. The entry " +
+                        f"of the plot at `plot[{i}][{jj}] should be `None` " +
+                        f"or inexistent."
+                    )
                     raise ValueError(
                         f"Invalid use of 'rowspan' or 'colspan'. The entry " +
                         f"of the plot at `plot[{i}][{jj}] should be `None` " +
@@ -172,7 +182,7 @@ def build_plotly_plot(
             # Type of subplot
             if isinstance(trace, go.Contour):
                 specs_row.append({"type": "contour"})
-            elif isinstance(trace, go.Scatter):
+            elif isinstance(trace, (go.Scatter, go.Histogram)):
                 specs_row.append({"type": "xy"})
             elif isinstance(trace, go.Image):
                 specs_row.append({"type": "image"})
@@ -186,8 +196,9 @@ def build_plotly_plot(
             elif isinstance(trace, go.Table):
                 specs_row.append({"type": "table"})
             else:
+                logger.error(f"Type '{type(trace)}' is not implemented.")
                 raise NotImplementedError(f"Type '{type(trace)} is not " +
-                                          f"implemented")
+                                          f"implemented.")
 
             # Secondary y-axis
             if "secondary_y_axis_trace_idx" in entry:

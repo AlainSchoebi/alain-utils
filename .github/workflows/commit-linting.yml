@@ -1,0 +1,16 @@
+name: Commit style validation
+
+on: [push]
+
+jobs:
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Commitlint
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: commitlint.config.js

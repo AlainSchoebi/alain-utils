@@ -1,4 +1,4 @@
-name: Python Package Testing
+name: Python package testing
 
 on: [push]
 

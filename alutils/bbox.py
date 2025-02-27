@@ -429,7 +429,7 @@ class BBox:
     # Visualization functions
     @requires_package('matplotlib')
     def show(self, axes: Optional[Axes] = None,
-            savefig: Optional[str] = None, **args) -> Axes:
+             savefig: Optional[str] = None, **args) -> Axes:
         """
         Visualize the BBox in a matloptlib plot.
         """

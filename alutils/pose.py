@@ -674,6 +674,7 @@ class Pose:
         return Pose(R, t)
 
 
+    # Representations
     def __repr__(self):
         return self.__str__()
 

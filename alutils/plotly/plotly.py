@@ -338,5 +338,3 @@ def build_plotly_plot(
         fig.show()
 
     return None
-
-

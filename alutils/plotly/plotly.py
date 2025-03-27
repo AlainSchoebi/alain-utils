@@ -19,11 +19,13 @@ logger = get_logger(__name__)
 
 @requires_package('plotly')
 def build_plotly_plot(
-    plot: List[List[Dict[str, Any]]],
-    title: Optional[str] = "",
-    height: Optional[int | None] = None,
-    open_browser: Optional[bool] = True,
-    output_html: Optional[str | Path | None] = None) -> None:
+        plot: List[List[Dict[str, Any]]],
+        title: Optional[str] = "",
+        height: Optional[int | None] = None,
+        open_browser: Optional[bool] = True,
+        output_html: Optional[str | Path | None] = None,
+        hover_mode: str = 'x unified'
+    ) -> None:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
     describes a subplot of the plot.
@@ -54,11 +56,12 @@ def build_plotly_plot(
                                 actual string is irrelevant.
 
     Optional Inputs:
-    - title: `str` the title of the plot.
+    - title:        `str` the title of the plot.
     - open_browser: `bool` whether to open the plot in the browser. Default is
                     `True`.
-    - output_html: `str | Path | None` the path to save the plot as an HTML
-                   file. Default is `None`.
+    - output_html:  `str | Path | None` the path to save the plot as an HTML
+                    file. Default is `None`.
+    - hover_mode:    `str` the hover mode. Default is `x unified`.
     """
 
     rows = len(plot)
@@ -327,7 +330,7 @@ def build_plotly_plot(
     if height is None:
         height = 400 * len(plot)
     fig.update_layout(title=title, showlegend=False, height=height,
-                      hovermode="x unified", **scatter_3d_viewpoints)
+                      **scatter_3d_viewpoints, hovermode=hover_mode)
 
     # Save HTML file
     if output_html is not None:

@@ -13,8 +13,8 @@ except ImportError:
     SCIPY_AVAILABLE = False
 
 # Types
-State = NewType("State", NDArray)
-Covariance = NewType("Covariance", NDArray)
+State = NDArray
+Covariance = NDArray
 
 def prior_update(x_m: State, P_m: Covariance,
                  A: NDArray, b: NDArray, Q: Covariance) \
@@ -42,24 +42,47 @@ def prior_update(x_m: State, P_m: Covariance,
           applying the dynamics, i.e. P_{k|k-1}.
    """
 
-   n = x_m.shape[0]
-   assert (x_m.shape == (n, 1) or x_m.shape == (n,)) and \
-          P_m.shape == (n, n) and \
-          A.shape == (n, n) and \
-          b.shape == x_m.shape and \
-          Q.shape == (n, n) and \
-          "Incorrect input shapes."
+   # Assertions
+   if x_m is not None and b is None or x_m is None and b is not None:
+       raise ValueError(
+           "Either both `x_m` and `b` must be provided or none."
+       )
+
+   if not isinstance(P_m, np.ndarray) or not isinstance(A, np.ndarray) or \
+      not isinstance(A, np.ndarray) or \
+      not P_m.ndim == 2 or not A.ndim == 2 or not Q.ndim == 2:
+       raise ValueError(
+              "The matrices `P_m`, `A`, `Q` must be 2D NumPy arrays."
+        )
+
+   n = A.shape[0]
+   if not P_m.shape == (n, n) or not A.shape == (n, n) or not Q.shape == (n, n):
+         raise ValueError(
+                "The matrices `P_m`, `A`, `Q` must all be NumPy arrays of " +
+                "shape (n, n) respectively."
+         )
+
+   if x_m is not None:
+      if not isinstance(x_m, np.ndarray) or not isinstance(b, np.ndarray) or \
+         not (x_m.shape == (n,) or x_m.shape == (n, 1)) or \
+         not (b.shape == (n,) or b.shape == (n, 1)):
+         raise ValueError(
+             "The vectors `x_m` and `b` must both be NumPy arrays of shape " +
+             "(n, 1) or (n,)."
+         )
 
    # Prior update
-   x_p = A @ x_m + b
+   x_p = None
+   if x_m is not None:
+       x_p = A @ x_m + b
    P_p = A @ P_m @ A.T + Q
 
    return x_p, P_p
 
-def measurement_update(x_p: State, P_p: Covariance,
-                       z: NDArray, H: NDArray, R: Covariance,
+def measurement_update(x_p: State | None, P_p: Covariance,
+                       z: NDArray | None, H: NDArray, R: Covariance,
                        KALMAN_GAIN_FORM: Optional[bool] = True,
-                       JOSEPH_FORM: Optional[bool] = False,
+                       JOSEPH_FORM: Optional[bool] = True,
                        symmetry_tol: Optional[float] = 1e-8,
                        invertibility_eps: Optional[float] = 1e-20) \
                          -> Tuple[State, Covariance]:
@@ -88,25 +111,51 @@ def measurement_update(x_p: State, P_p: Covariance,
    - JOSEPH_FORM:      `bool` flag to use the Joseph form for the covariance
                        update. This only works when using the `KALMAN_GAIN_FORM`
                        form and improves numerical stability. Default is
-                       `False`.
+                       `True`.
 
    Outputs
    - x_m: `(n, 1)` or `(n,)` a posteriori state estimate after employing the
            measurement z_k, i.e. x_{k|k}.
    - P_m: `(n, n)` a posteriori covariance matrix of the state after employing
            the measurement z_k, i.e. x_{k|k}.
+
+   Note: the prior covariance matrix P_p is allowed to be positive semi-
+         definite, i.e., it could theoretically be singular. However, the
+         measurement noise covariance matrix R must be positive definite, i.e.,
+         it must be invertible.
    """
 
-   n, m = x_p.shape[0], z.shape[0]
-   assert (x_p.shape == (n, 1) or x_p.shape == (n,)) and \
-          P_p.shape == (n, n) and \
-          (z.shape == (m, 1) or z.shape == (m,)) and \
-          z.ndim == x_p.ndim and \
-          H.shape == (m, n) and \
-          R.shape == (m, m) and \
-          "Incorrect input shapes."
-
    # Assertions
+   if x_p is not None and z is None or x_p is None and z is not None:
+       raise ValueError(
+           "Either both `x_p` and `z` must be provided or none."
+       )
+
+   if not isinstance(P_p, np.ndarray) or not isinstance(R, np.ndarray) or \
+      not isinstance(H, np.ndarray) or \
+      not P_p.ndim == 2 or not R.ndim == 2 or not H.ndim == 2:
+       raise ValueError(
+           "The matrices `P_p`, `R` and `H must be 2D NumPy arrays."
+        )
+
+   m, n = H.shape
+   if not R.shape == (m, m) or not P_p.shape == (n, n):
+         raise ValueError(
+              "The matrices `P_p`, `R` and `H` must be NumPy arrays of shape " +
+              "(n, n), (m, m) and (m, n) respectively."
+         )
+
+   if x_p is not None:
+      if not isinstance(x_p, np.ndarray) or not isinstance(z, np.ndarray) or \
+         not (x_p.shape == (n,) or x_p.shape == (n, 1)) or \
+         not (z.shape == (m,) or z.shape == (m, 1)):
+         raise ValueError(
+             "The vectors `x_p` and `z` must NumPy arrays of shape " +
+             "(n, 1) or (n,) and (m, 1) or (m,) respectively."
+         )
+   x_m = None
+
+   # Assumptions
    if np.abs(P_p.T - P_p).max() > symmetry_tol:
        raise ValueError("The provided prior covariance matrix P_p is not " +
                         "symmetric.")
@@ -114,10 +163,6 @@ def measurement_update(x_p: State, P_p: Covariance,
    if np.abs(R.T - R).max() > symmetry_tol:
        raise ValueError("The provided measurement noise covariance matrix R " +
                         " is not symmetric.")
-
-   if np.linalg.det(P_p) < invertibility_eps:
-       raise ValueError("The provided prior covariance matrix P_p is not " +
-                        "is not invertible.")
 
    if np.linalg.det(R) < invertibility_eps:
        raise ValueError("The provided measurement noise covariance matrix R " +
@@ -135,7 +180,8 @@ def measurement_update(x_p: State, P_p: Covariance,
        else:
            K = P_p @ H.T @ np.linalg.inv(H @ P_p @ H.T + R)
 
-       x_m = x_p + K @ (z - H @ x_p)
+       if x_p is not None:
+           x_m = x_p + K @ (z - H @ x_p)
 
        # Jospeh form (for numerical stability)
        if JOSEPH_FORM:
@@ -145,10 +191,16 @@ def measurement_update(x_p: State, P_p: Covariance,
 
    # Direct form without computing the Kalman gain
    else:
-       R_inv = np.linalg.inv(R)
-       P_m_inv = H.T @ R_inv @ H + np.linalg.inv(P_p)
-       P_m = np.linalg.inv(P_m_inv)
 
-       x_m = x_p + P_m @ H.T @ R_inv @ (z - H @ x_p)
+       # For this form, we need P_p to be invertible
+       if np.linalg.det(P_p) < invertibility_eps:
+           raise ValueError("The provided prior covariance matrix P_p is not " +
+                            "is not invertible.")
+
+       P_p_inv, R_inv = np.linalg.inv(R), np.linalg.inv(P_p)
+       P_m = np.linalg.inv(H.T @ R_inv @ H + P_p_inv)
+
+       if x_p is not None:
+           x_m = x_p + P_m @ H.T @ R_inv @ (z - H @ x_p)
 
    return x_m, P_m

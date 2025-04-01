@@ -19,11 +19,13 @@ logger = get_logger(__name__)
 
 @requires_package('plotly')
 def build_plotly_plot(
-    plot: List[List[Dict[str, Any]]],
-    title: Optional[str] = "",
-    height: Optional[int | None] = None,
-    open_browser: Optional[bool] = True,
-    output_html: Optional[str | Path | None] = None) -> None:
+        plot: List[List[Dict[str, Any]]],
+        title: Optional[str] = "",
+        height: Optional[int | None] = None,
+        open_browser: Optional[bool] = True,
+        output_html: Optional[str | Path | None] = None,
+        hover_mode: str = 'x unified'
+    ) -> None:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
     describes a subplot of the plot.
@@ -54,11 +56,12 @@ def build_plotly_plot(
                                 actual string is irrelevant.
 
     Optional Inputs:
-    - title: `str` the title of the plot.
+    - title:        `str` the title of the plot.
     - open_browser: `bool` whether to open the plot in the browser. Default is
                     `True`.
-    - output_html: `str | Path | None` the path to save the plot as an HTML
-                   file. Default is `None`.
+    - output_html:  `str | Path | None` the path to save the plot as an HTML
+                    file. Default is `None`.
+    - hover_mode:    `str` the hover mode. Default is `x unified`.
     """
 
     rows = len(plot)
@@ -136,7 +139,8 @@ def build_plotly_plot(
 
     # Build specifications and titles of the plot
     specs, titles = [], []
-    shared_x_axis_identifiers = set()
+    shared_x_axis_identifiers = []
+    shared_x_axis_identifiers_ref_subplot = []
     scatter_3d_viewpoints, scatter_3d_counter = {}, 0
     for i in range(rows):
         specs_row = []
@@ -216,7 +220,10 @@ def build_plotly_plot(
 
             # Shared x-axes
             if 'shared_x_axis_identifier' in entry:
-                shared_x_axis_identifiers.add(entry['shared_x_axis_identifier'])
+                identifier = entry['shared_x_axis_identifier']
+                if not identifier in shared_x_axis_identifiers:
+                    shared_x_axis_identifiers.append(identifier)
+                    shared_x_axis_identifiers_ref_subplot.append((i, j))
         specs.append(specs_row)
 
     # Make plot
@@ -226,7 +233,6 @@ def build_plotly_plot(
 
     # Build plot
     axes_counter = 0
-    shared_x_axis_identifiers_list = list(shared_x_axis_identifiers)
     for i, row in enumerate(plot):
         for j, entry in enumerate(row):
 
@@ -260,6 +266,7 @@ def build_plotly_plot(
             # Count number of usual x-y axes
             if not isinstance(trace, go.Mesh3d):
                 axes_counter += 1
+                plot[i][j]['_axes_counter'] = axes_counter
 
             # Axes labels
             if 'xlabel' in entry:
@@ -272,9 +279,14 @@ def build_plotly_plot(
 
             # Shared x-axis
             if 'shared_x_axis_identifier' in entry:
-                idx = shared_x_axis_identifiers_list \
+                idx = shared_x_axis_identifiers \
                     .index(entry['shared_x_axis_identifier'])
-                fig.update_xaxes(matches=f"x{idx+1}", row=i+1, col=j+1)
+                i_ref, j_ref = shared_x_axis_identifiers_ref_subplot[idx]
+                if not (i, j) == (i_ref, j_ref):
+                    fig.update_xaxes(
+                        matches=f"x{plot[i_ref][j_ref]['_axes_counter']}",
+                        row=i+1, col=j+1
+                    )
 
             # Axes limits
             if not isinstance(trace, (go.Scatter, go.Contour, go.Image)) and \
@@ -327,7 +339,7 @@ def build_plotly_plot(
     if height is None:
         height = 400 * len(plot)
     fig.update_layout(title=title, showlegend=False, height=height,
-                      hovermode="x unified", **scatter_3d_viewpoints)
+                      **scatter_3d_viewpoints, hovermode=hover_mode)
 
     # Save HTML file
     if output_html is not None:

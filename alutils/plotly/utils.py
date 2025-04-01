@@ -142,7 +142,9 @@ def gaussian_1d_traces(
 
 @requires_package("plotly")
 def gaussian_2d_traces(
-    mu: NDArray, cov: NDArray, output_size: BBox, S: int = 100,
+    mu: NDArray, cov: NDArray,
+    output_size: Optional[BBox] = None,
+    n_ellipse: int = 100, n_contour: int = 100,
     primary_color: str = "cyan", secondary_color: str = "blue",
     colorscale: str | List = "Viridis"
     ) -> List[go.Contour | go.Scatter]:
@@ -151,20 +153,25 @@ def gaussian_2d_traces(
     1 standard deviation and the 2 standard deviation ellipses, and the contour
     of the Gaussian distribution.
 
-    The function only draws the contour on a square image of size `H x W`, and
-    `S` points are used to draw the ellipses.
+    The function only draws the contour on a square image of size `H x W`. If
+    `output_size` is `None`, i.e., the dimensions `H x W` are unknown, then the
+    contour will only be plotted within the 2 standard deviation ellipse.
 
     Inputs:
     - mu: `NDArray(2,)` the mean of the Gaussian distribution.
     - cov: `NDArray(2, 2)` the covariance matrix of the Gaussian distribution.
-    - output_size: `Bbox` defining the size of the output image.
-    - S: `int` the number of points used to draw the ellipses.
 
     Optional inputs:
+    - output_size:     `BBox` defining the size of the output image. If `None`,
+                        the contour will only be plotted within the 2 standard
+                        deviation ellipse. Default is `None`.
+    - n_ellipse:       `int` the number of points used to draw the ellipses.
+                       Default is `100`.
+    - n_contour:       `int` the number of points used to draw the contour map.
     - primary_color:   `str` the primary color used for drawing the curves.
     - secondary_color: `str` the secondary color used for drawing the curves.
-    - colorscale:     `str | List[...]` the colorscale used for drawing the
-                       contours.
+    - colorscale:      `str | List[...]` the colorscale used for drawing the
+                        contours.
 
     Returns:
     - traces: `List[go.Contour | go.Scatter]` the traces of the Gaussian
@@ -173,7 +180,9 @@ def gaussian_2d_traces(
 
     assert mu.shape == (2,) and cov.shape == (2, 2)
     if np.linalg.det(cov) < 1e-15:
-        #TODO IMPROVE
+        logger.warning("The covariance matrix is singular, the Gaussian " +
+                       "distribution cannot be plotted.")
+        # TODO: IMPROVE
         return [
             go.Scatter(
                x=[mu[0]],
@@ -197,22 +206,34 @@ def gaussian_2d_traces(
     P = eigvecs / np.sqrt(eigvals) # (2, 2)
 
     # Generate points on the ellipse
-    thetas = np.linspace(0, 2 * np.pi, S) # (S,)
+    thetas = np.linspace(0, 2 * np.pi, n_ellipse) # (S,) where S=n_ellipse
     cos_sin = np.c_[np.cos(thetas), np.sin(thetas)][..., None] # (S, 2, 1)
     points_1std = mu[:, None] + P @ cos_sin # (S, 2, 1)
     points_2std = mu[:, None] + 2 * P @ cos_sin # (S, 2, 1)
     points_1std = points_1std[..., 0] # (S, 2)
     points_2std = points_2std[..., 0] # (S, 2)
 
-    # Contour of the Gaussian distribution
-    x = np.linspace(output_size.x1, output_size.x2, S) # (S,)
-    y = np.linspace(output_size.y1, output_size.y2, S) # (S,)
+    # Handle the case where the output size is unknown
+    size = output_size
+    if output_size is None:
+        size = BBox.from_points(
+            mu + P @ np.array([[0, 1], [0, -1], [1, 0], [-1, 0]])[:, :, None]
+        )
+
+    # Compute the contour of the Gaussian distribution
+    n = int(math.sqrt(n_contour))
+    x = np.linspace(size.x1, size.x2, n) # (n,)
+    y = np.linspace(size.y1, size.y2, n) # (n,)
     X, Y = np.meshgrid(x, y) # (S, S, 2)
     XY = np.stack([X, Y], axis=-1)[..., None] # (S, S, 2, 1)
     XY = XY - mu[:, None] # (S, S, 2, 1)
     XY_T = XY.swapaxes(-2, -1) # (S, S, 1, 2)
     Z = XY_T @ cov_inv @ XY # (S, S, 1, 1)
     Z = Z[:, :, 0, 0] # (S, S)
+
+    # Remove points outside of 2 std ellise if output_size is None
+    if output_size is None:
+        Z = np.where(Z <= 2**2, Z, np.nan)
 
     gaussian_mu_trace = go.Scatter(
         x=[mu[0]],

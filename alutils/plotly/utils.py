@@ -25,6 +25,21 @@ from alutils.bbox import BBox
 from alutils.loggers import get_logger
 logger = get_logger(__name__)
 
+def array_to_latex(array: NDArray, decimals: int = 2) -> str:
+    if array.ndim == 1:
+        vals = [f"{x:.2{decimals}}" for x in array]
+        return r"$\begin{pmatrix} " + r" \\ ".join(vals) + \
+               r" \end{pmatrix}$"
+    elif array.ndim == 2:
+        rows = [" & ".join(f"{x:.{decimals}f}" for x in row) for row in array]
+        return r"$\begin{pmatrix} " + r" \\ ".join(rows) + \
+               r" \end{pmatrix}$"
+    else:
+        raise NotImplementedError(
+            f"Cannot convert array of dimension {array.ndim} to LaTeX. " +
+            f"Only 1D and 2D arrays are supported."
+        )
+
 @requires_package("shapely")
 def get_2d_boundary(vertices: NDArray, faces: NDArray) -> List[NDArray]:
     """

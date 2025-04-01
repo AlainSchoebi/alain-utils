@@ -14,80 +14,297 @@ from numpy.typing import NDArray
 from matplotlib import colors as mcolors
 
 class Color:
+    """
+    Color class to represent colors in RGB or RGBA format.
 
-    def __init__(
-            self,
-            # TODO Color(r, g, b) instead of Color((r,g,b))
-            arg: str | \
-                 Tuple[int, int, int] | \
-                 Tuple[float, float, float] | \
-                 Tuple[int, int, int, int] | \
-                 Tuple[float, float, float, float] | \
-                 List[int] | \
-                 List[float] | \
-                 NDArray = "black",
-            opacity: float | int | None = None
-        ):
+    All colors are internally represented as `float` values in `[0., 1.]`.
+
+    The `opacity` or `alpha` value is optional and can be set to `None` if not
+    needed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        General color constructor.
+
+        The `opacity`, `alpha`, or `a` arguments must always be provided as
+        `float` in `[0., 1.]`.
+
+        Available constructors:
+        - Default color (red).
+            Color()
+        - RGB color with `int` values in `[0, 255]`:
+            Color(`int`, `int`, `int`)
+        - RGB color with `float` values in `[0., 1.]`:
+            Color(`float`, `float`, `float`)
+        - RGB color with `tuple` values in `[0, 255]`:
+            Color((`int`, `int`, `int`))
+        - RGB color with `tuple` values in `[0., 1.]`:
+            Color((`float`, `float`, `float`))
+        - RGB color with `list` values in `[0, 255]`:
+            Color([`int`, `int`, `int`])
+        - RGB color with `list` values in `[0., 1.]`:
+            Color([`float`, `float`, `float`])
+        - RGB color with `NDArray` values in `[0, 255]`:
+            Color(np.array([`int`, `int`, `int`]))
+        - RGB color with `NDArray` values in `[0., 1.]`:
+            Color(np.array([`float`, `float`, `float`]))
+        - RGB color with string `rgb(r, g, b)` format:
+            Color("rgb(`int`, `int`, `int`)")
+        - RGB color with string name:
+            Color("<color name>")
+        - RGB color from HSV values:
+            Color(h=`float`, s=`float`, v=`float`)
+        - RGBA colors ...
+
+        Note: the keyword arguments `opacity`, `alpha` and `a` are aliases for
+              the opacity value. Only one of them should be provided.
+
+        Non-exhaustive list of example types:
+        - Color()
+        - Color(opacity=0.5)
+        - Color("red")
+        - Color("red", opacity=0.5)
+        - Color(234, 12, 120)
+        - Color(234, 12, 120, 0.5)
+        - Color(234, 12, 120, opacity=0.5)
+        - Color(0.8, 0.1, 0.8)
+        - Color(0.8, 0.1, 0.8, 0.5)
+        - Color(0.8, 0.1, 0.8, opacity=0.5)
+        - Color((234, 12, 120))
+        - Color((234, 12, 120, 0.5))
+        - Color((234, 12, 120), opacity=0.5)
+        - Color((0.8, 0.1, 0.8))
+        - Color((0.8, 0.1, 0.8, 0.5))
+        - Color((0.8, 0.1, 0.8), opacity=0.5)
+        - Color([234, 12, 120])
+        - Color([234, 12, 120, 0.5])
+        - Color([234, 12, 120], opacity=0.5)
+        - Color([0.8, 0.1, 0.8])
+        - Color([0.8, 0.1, 0.8, 0.5])
+        - Color([0.8, 0.1, 0.8], opacity=0.5)
+        - Color(np.array([234, 12, 120]))
+        - Color(np.array([234, 12, 120]), opacity=0.5)
+        - Color(np.array([0.8, 0.1, 0.8]))
+        - Color(np.array([0.8, 0.1, 0.8, 0.5]))
+        - Color(np.array([0.8, 0.1, 0.8]), opacity=0.5)
+        - Color("rgb(255, 12, 210)")
+        - Color("rgba(255, 255, 231, 0.5)")
+        - Color("rgb(255, 12, 120)", opacity=0.5)
+        - Color(r=255, g=12, b=120)
+        - Color(r=255, g=12, b=120, a=0.5)
+        - Color(r=255, g=12, b=120, opacity=0.5)
+        - Color(red=255, green=12, blue=120)
+        - Color(red=255, green=12, blue=120, alpha=0.5)
+        - Color(red=255, green=12, blue=120, opacity=0.5)
+        - Color(h=0.8, s=0.1, v=0.8)
+        - Color(h=0.8, s=0.1, v=0.8, opacity=0.5)
+        - Color(hue=0.8, saturation=0.1, value=0.8)
+        - Color(hue=0.8, saturation=0.1, value=0.8, opacity=0.5)
+        """
 
         self.__a = None
 
-        # NDArray
-        if isinstance(arg, np.ndarray):
-            if arg.ndim != 1 or len(arg) not in (3, 4):
-                raise ValueError(f"Invalid NDArray shape: {arg.shape}")
+        # Verify opacity input
+        if sum([x in kwargs for x in ["opacity", "alpha", "a"]]) > 1:
+            raise ValueError(
+                "The kwargs `opacity`, `alpha` and `a` are aliases. " +
+                "Please provide only one of them."
+            )
 
-            self.r, self.g, self.b = arg[:3]
-            if len(arg) == 4:
-                self.a = arg[3]
+        # Remove opacity, alpha or a from kwargs
+        # Check if opacity is provided and extract it
+        kwargs_original = kwargs.copy()
+        opacity_provided = "opacity" in kwargs or \
+                           "alpha" in kwargs or \
+                           "a" in kwargs
+        opacity = kwargs.pop("opacity", None)
+        opacity = kwargs.pop("alpha", None) if opacity is None else opacity
+        opacity = kwargs.pop("a", None) if opacity is None else opacity
 
-        # Tuple
-        if isinstance(arg, tuple):
-            if len(arg) not in (3, 4):
-                raise ValueError(f"Invalid color input: {arg}")
+        # Positional arguments
+        if len(args) == 1:
+            arg = args[0]
 
-            self.r, self.g, self.b = arg[:3]
-            if len(arg) == 4:
-                self.a = arg[3]
-
-        # String
-        elif isinstance(arg, str):
-
-            # Examples: "rgb(255, 12, 120)" or "rgba(255, 255, 231, 135)"
-            if arg.startswith("rgb"):
-
-                try:
-                    values = tuple(map(int, re.findall(r'\d+', arg)))
-                except:
-                    raise ValueError(f"Invalid string format: {arg}")
-
-                if not len(values) == 3 or len(values) == 4:
-                    raise ValueError(f"Invalid string format: {arg}")
-
-                c = Color(values[:3])
-                self.__r, self.__g, self.__b, self.__a = c.r, c.g, c.b, c.a
-
-            elif arg.startswith("#"):
-                raise NotImplementedError(
-                    "Hexadecimal color strings are not supported."
-                )
-
-            else:
-                try:
-                    rgb = mcolors.to_rgb(arg)
-                    self.__r, self.__g, self.__b, self.__a = *rgb[:3], None
-                except Exception:
+            # Tuple
+            if isinstance(arg, tuple):
+                arg: tuple
+                if len(arg) not in (3, 4):
                     raise ValueError(
-                        f"Invalid color string: {arg}"
+                        f"Invalid tuple length for color constructor: " + \
+                        f"{len(arg)}. Expected 3 or 4."
+                    )
+                if not type(arg[0]) == type(arg[1]) == type(arg[2]) or \
+                   not isinstance(arg[0], (int, float)):
+                    raise ValueError(
+                        f"The r, g, b arguments must be of the same type " + \
+                        f"and either of type `int` or `float`. Got " + \
+                        f"{type(arg[0])}, {type(arg[1])} and {type(arg[2])}."
                     )
 
-        # Opacity if provided
-        if opacity is not None:
-            if self.has_alpha:
-                raise ValueError(
-                    "Opacity provided but color already has an alpha value."
+                self.r, self.g, self.b = arg[:3]
+                if len(arg) == 4:
+                    self.a = arg[3]
+
+            # List
+            elif isinstance(arg, list):
+                c = Color(tuple(arg))
+                self.__r, self.__g, self.__b = c.r, c.g, c.b
+                if c.has_alpha: self.__a = c.a
+
+            # NDArray
+            elif isinstance(arg, np.ndarray):
+                arg: np.ndarray
+                if arg.ndim != 1 or len(arg) not in (3, 4):
+                    raise ValueError(
+                        f"Invalid NDArray length for color constructor: " + \
+                        f"{len(arg)}. Expected 3 or 4."
+                    )
+                if not arg.dtype in (
+                    np.int32, np.int64, np.float32, np.float64
+                   ):
+                    raise ValueError(
+                        f"Invalid NDArray dtype for color constructor: " + \
+                        f"{arg.dtype}. Expected `int` or `float`."
+                    )
+                c = Color(arg.tolist())
+                self.__r, self.__g, self.__b = c.r, c.g, c.b
+                if c.has_alpha: self.__a = c.a
+
+            # String
+            elif isinstance(arg, str):
+                arg: str
+
+                # Examples: "rgb(255, 12, 120)" or "rgba(255, 255, 231, 135)"
+                if arg.startswith("rgb"):
+
+                    def invalid_string():
+                        raise ValueError(
+                            f"Invalid string format for color constructor: " + \
+                            f'{arg}. Expected "rgb(r, g, b)" or ' + \
+                            f'rgba(r, g, b, a)", with r, g, b in `int` in ' + \
+                            f"[0, 255] and a in `float` in `[0., 1.]`."
+                        )
+
+                    try:
+                        values = tuple(map(float, re.findall(r'\d+', arg)))
+                    except:
+                        invalid_string()
+
+                    if not len(values) == 3 or len(values) == 4 or \
+                       not all(int(v) == float(v) for v in values[:3]):
+                        invalid_string()
+
+                    c = Color(tuple(int(v) for v in values[:3]))
+                    self.__r, self.__g, self.__b = c
+                    if len(values) == 4:
+                        self.a = values[3]
+
+                elif arg.startswith("#"):
+                    raise NotImplementedError(
+                        "Hexadecimal color strings are not yet supported."
+                    )
+
+                else:
+                    try:
+                        rgb = mcolors.to_rgb(arg)
+                        self.__r, self.__g, self.__b, = rgb[:3]
+                    except Exception:
+                        raise ValueError(
+                            f"Invalid string for color constructor: {arg}."
+                        )
+
+            # None of the above types
+            else:
+                raise TypeError(
+                    f"Invalid first positional argument type for color " + \
+                    f"construcdtor: {type(arg)}. Expected `str`, `tuple`, " + \
+                    f"`list` or `NDArray`."
                 )
 
+        # Three or four positional arguments
+        elif len(args) == 3 or len(args) == 4:
+            c = Color(tuple(args))
+            self.__r, self.__g, self.__b, self.__a = c.r, c.g, c.b, c.a
+
+        # Invalid number of positional arguments
+        elif not len(args) == 0:
+            raise ValueError(
+                f"Invalid number of positional arguments (`*args`). " +
+                f"Expected 0, 1, 3 or 4 arguments, not {len(args)}."
+            )
+
+        # Keyword arguments
+        # Default color if no arguments provided (red color)
+        elif len(args) == 0 and len(kwargs) == 0:
+            self.__r, self.__g, self.__b = Color("red")
+
+        # hsv argument
+        elif len(args) == 0 and len(kwargs) == 1:
+            if "hsv" in kwargs:
+                hsv = kwargs["hsv"]
+                if not isinstance(hsv, (tuple, list, np.ndarray)) or \
+                   not len(hsv) == 3:
+                    raise ValueError(
+                        f"Invalid hsv argument for color constructor: " + \
+                        f"{hsv}. Expected a `tuple`, `list` or `NDArray` " + \
+                        f"of length 3."
+                    )
+                self.__r, self.__g, self.__b = Color.from_hsv(*hsv)
+
+        # r, g, b and h, s, v keyword arguments
+        elif len(args) == 0 and len(kwargs) == 3:
+            if "r" in kwargs and "g" in kwargs and "b" in kwargs:
+                c = Color((kwargs["r"], kwargs["g"], kwargs["b"]))
+                self.__r, self.__g, self.__b = c
+
+            elif "red" in kwargs and "green" in kwargs and "blue" in kwargs:
+                c = Color((kwargs["red"], kwargs["green"], kwargs["blue"]))
+                self.__r, self.__g, self.__b = c
+
+            elif "h" in kwargs and "s" in kwargs and "v" in kwargs:
+                c = Color.from_hsv(kwargs["h"], kwargs["s"], kwargs["v"])
+                self.__r, self.__g, self.__b = c
+
+            elif "hue" in kwargs and "saturation" in kwargs and \
+                 "value" in kwargs:
+                c = Color.from_hsv(
+                    kwargs["hue"], kwargs["saturation"], kwargs["value"]
+                )
+                self.__r, self.__g, self.__b = c
+
+        else:
+            raise ValueError(
+                f"Not recognized color constructor input: {args} " +
+                f"and {kwargs_original}."
+            )
+
+        # Opacity or alpha provided
+        if opacity_provided:
+            if self.has_alpha:
+                raise ValueError(
+                    "Opacity was provided, but the color already has an " + \
+                    "alpha value set."
+                )
             self.a = opacity
+
+    @staticmethod
+    def from_hsv(h: float, s: float, v: float,
+                 opacity: float | None = None) -> Color:
+        """
+        Create a color from HSV values.
+
+        Inputs:
+        - h: `float` hue value in `[0., 1.]`
+        - s: `float` saturation value in `[0., 1.]`
+        - v: `float` value (brightness) in `[0., 1.]`
+        """
+        hsv = (h, s, v)
+        if not all(isinstance(x, float) for x in hsv) or \
+           not all(0 <= x <= 1 for x in hsv):
+            raise TypeError("The HSV values must be `float` in `[0., 1.]`.")
+
+        return Color(mcolors.hsv_to_rgb(hsv), opacity=opacity)
 
     @staticmethod
     def random(self) -> Color:
@@ -126,7 +343,7 @@ class Color:
 
     @property
     def a(self) -> float | None:
-        """ Alpha value `float or `None` """
+        """ Alpha value `float` or `None` """
         return self.__a
 
     @property
@@ -151,7 +368,7 @@ class Color:
 
     @g.setter
     def g(self, g: float | int) -> None:
-        """ Set green value """
+        """ Set green value with `float` or `int` """
         if isinstance(g, float):
             if not 0 <= g <= 1:
                 raise ValueError(f"Invalid green value: {g}.")
@@ -165,7 +382,7 @@ class Color:
 
     @b.setter
     def b(self, b: float | int) -> None:
-        """ Set blue value """
+        """ Set blue value with `float` or `int` """
         if isinstance(b, float):
             if not 0 <= b <= 1:
                 raise ValueError(f"Invalid blue value: {b}.")
@@ -179,7 +396,7 @@ class Color:
 
     @a.setter
     def a(self, a: float | None) -> None:
-        """ Set alpha value """
+        """ Set alpha value with `float` or `None` """
         if a is None:
             self.__a = None
         elif isinstance(a, float):
@@ -192,11 +409,11 @@ class Color:
     # Unpacking
     def __iter__(self: Color) -> Tuple[float, float, float] | \
                                  Tuple[float, float, float, float]:
-        """ Unpack the color """
+        """ Unpack the color to `(r, g, b)` or `(r, g, b, a)` """
         if self.has_alpha:
-            return self.rgba_tuple
+            return iter(self.rgba_tuple)
         else:
-            return self.rgb_tuple
+            return iter(self.rgb_tuple)
 
     # RGB and RGBA properties
     @property
@@ -273,6 +490,53 @@ class Color:
         color = self.with_opacity(opacity)
         return f"rgba({color.r_int}, {color.g_int}, {color.b_int}, {color.a})"
 
+    # HSV representation
+    @property
+    def hsv_tuple(self) -> Tuple[float, float, float]:
+        """ HSV tuple `(float, float, float)` """
+        hsv = mcolors.rgb_to_hsv(self.rgb_tuple)
+        return tuple(hsv)
+
+    @property
+    def hsv_list(self) -> List[float]:
+        """ HSV list `[float, float, float]` """
+        return list(self.hsv_tuple)
+
+    @property
+    def hsv_array(self) -> NDArray:
+        """ HSV array `NDArray` """
+        return np.array(self.hsv_tuple)
+
+    @property
+    def h(self) -> float:
+        """ Hue value `float` """
+        return self.hsv_tuple[0]
+
+    @property
+    def s(self) -> float:
+        """ Saturation value `float` """
+        return self.hsv_tuple[1]
+
+    @property
+    def v(self) -> float:
+        """ Value (brightness) `float` """
+        return self.hsv_tuple[2]
+
+    @property
+    def hue(self) -> float:
+        """ Hue value `float` """
+        return self.hsv_tuple[0]
+
+    @property
+    def saturation(self) -> float:
+        """ Saturation value `float` """
+        return self.hsv_tuple[1]
+
+    @property
+    def value(self) -> float:
+        """ Value (brightness) `float` """
+        return self.hsv_tuple[2]
+
     # Operations
     def __mul__(
             self: Color, scalar: float | int
@@ -300,6 +564,17 @@ class Color:
         """ Divide color rgb(a) components by a scalar """
         return self * (1/scalar)
 
+    # Equality
+    def __eq__(self: Color, other: Color) -> bool:
+        """ Check if two colors are equal """
+        if not isinstance(other, Color):
+            return False
+
+        if not self.has_alpha == other.has_alpha:
+            return False
+
+        return tuple(self) == tuple(other)
+
     # Interpolation
     @staticmethod
     def interpolate(
@@ -325,6 +600,7 @@ class Color:
                 color1.rgb_array + (color2.rgb_array - color1.rgb_array) * t
             )
 
+    # With opacity
     def with_opacity(self: Color, opacity: float | None = None) -> Color:
         """
         Return a new `Color` with the same RGB values and the provided opacity.
@@ -349,6 +625,13 @@ class Color:
 
         return Color(self.rgb_tuple + (opacity,))
 
+    # Color transformations
+    def complementary_color(self: Color) -> Color:
+        hsv = self.hsv_list
+        hsv[2] *= 2 if hsv[2] < 0.5 else 0.5
+        return Color(hsv=hsv, opacity=self.a)
+
+    # String representation
     def __str__(self: Color) -> str:
         """ String representation of the color """
         if self.has_alpha:

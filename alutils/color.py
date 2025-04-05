@@ -148,9 +148,7 @@ class Color:
 
             # List
             elif isinstance(arg, list):
-                c = Color(tuple(arg))
-                self.__r, self.__g, self.__b = c.r, c.g, c.b
-                if c.has_alpha: self.__a = c.a
+                Color.__init__(self, tuple(arg))
 
             # NDArray
             elif isinstance(arg, np.ndarray):
@@ -167,9 +165,10 @@ class Color:
                         f"Invalid NDArray dtype for color constructor: " + \
                         f"{arg.dtype}. Expected `int` or `float`."
                     )
-                c = Color(arg.tolist())
-                self.__r, self.__g, self.__b = c.r, c.g, c.b
-                if c.has_alpha: self.__a = c.a
+                Color.__init__(self, arg.tolist())
+                #c = Color(arg.tolist())
+                #self.__r, self.__g, self.__b = c.r, c.g, c.b
+                #if c.has_alpha: self.__a = c.a
 
             # String
             elif isinstance(arg, str):
@@ -195,10 +194,8 @@ class Color:
                        not all(int(v) == float(v) for v in values[:3]):
                         invalid_string()
 
-                    c = Color(tuple(int(v) for v in values[:3]))
-                    self.__r, self.__g, self.__b = c
-                    if len(values) == 4:
-                        self.a = values[3]
+                    a = values[3] if len(values) == 4 else None
+                    Color.__init__(self, tuple(int(v) for v in values[:3]), a=a)
 
                 elif arg.startswith("#"):
                     raise NotImplementedError(
@@ -224,8 +221,7 @@ class Color:
 
         # Three or four positional arguments
         elif len(args) == 3 or len(args) == 4:
-            c = Color(tuple(args))
-            self.__r, self.__g, self.__b, self.__a = c.r, c.g, c.b, c.a
+            Color.__init__(self, tuple(args))
 
         # Invalid number of positional arguments
         elif not len(args) == 0:
@@ -237,7 +233,7 @@ class Color:
         # Keyword arguments
         # Default color if no arguments provided (red color)
         elif len(args) == 0 and len(kwargs) == 0:
-            self.__r, self.__g, self.__b = Color("red")
+            Color.__init__(self, "red")
 
         # hsv argument
         elif len(args) == 0 and len(kwargs) == 1:
@@ -255,12 +251,12 @@ class Color:
         # r, g, b and h, s, v keyword arguments
         elif len(args) == 0 and len(kwargs) == 3:
             if "r" in kwargs and "g" in kwargs and "b" in kwargs:
-                c = Color((kwargs["r"], kwargs["g"], kwargs["b"]))
-                self.__r, self.__g, self.__b = c
+                Color.__init__(self, kwargs["r"], kwargs["g"], kwargs["b"])
 
             elif "red" in kwargs and "green" in kwargs and "blue" in kwargs:
-                c = Color((kwargs["red"], kwargs["green"], kwargs["blue"]))
-                self.__r, self.__g, self.__b = c
+                Color.__init__(
+                    self, kwargs["red"], kwargs["green"], kwargs["blue"]
+                )
 
             elif "h" in kwargs and "s" in kwargs and "v" in kwargs:
                 c = Color.from_hsv(kwargs["h"], kwargs["s"], kwargs["v"])

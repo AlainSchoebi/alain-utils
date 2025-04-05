@@ -6,6 +6,9 @@ from typing import Optional, List, Tuple, Any
 import numpy as np
 from numpy.typing import NDArray
 
+# Python
+from pathlib import Path
+
 # Utils
 from .decorators import requires_package
 
@@ -429,7 +432,7 @@ class BBox:
     # Visualization functions
     @requires_package('matplotlib')
     def show(self, axes: Optional[Axes] = None,
-             savefig: Optional[str] = None, **args) -> Axes:
+             savefig: Optional[str | Path] = None, **args) -> Axes:
         """
         Visualize the BBox in a matloptlib plot.
         """
@@ -439,7 +442,7 @@ class BBox:
     @requires_package('matplotlib')
     def visualize(bboxes: BBox | List[BBox],
                   axes: Optional[Axes] = None,
-                  savefig: Optional[str] = None,
+                  savefig: Optional[str | Path] = None,
                   show: Optional[bool] = True,
                   show_text: Optional[bool] = True,
                   color: Optional[NDArray | str] = None,
@@ -449,26 +452,38 @@ class BBox:
                   linestyle: Optional[str] = "solid",
                   **args) -> Axes:
         """
-        Visualize a list of BBoxes in a matloptlib plot.
+        Visualize a BBox or a list of BBoxes in a matloptlib plot.
 
         Inputs
         - bboxes: list of `BBox` to plot
 
         Optional Inputs
-        - axes: `Axes` matplotlib axes to plot on. If not provided, a new
-                figure will be created.
-        - show: `bool` whether to show the plot or not. Default is True.
-        - savefig:
+        - axes:      `Axes` matplotlib axes to plot on. If not provided, a new
+                     figure will be created.
+        - show:      `bool` whether to show the plot or not. Default is True. If
+                     axes are provided, the plot will not be shown. If savefig
+                     is provided, the plot will not be shown.
+        - savefig:   `str` or `Path` path to save the figure. By default the
+                     figure is not being saved.
         - show_text: `bool` whether to show the label of the BBoxes or not.
-        - color: `NDArray(3,)` color of the BBoxes.
-        - alpha: `float` transparency of the BBoxes.
+        - color:     `NDArray(3,)` color of the BBoxes.
+        - alpha:     `float` transparency of the BBoxes.
         """
+
+        # Assertions
+        if savefig and axes:
+            logger.error("Can't save figure if axes are provided.")
+            raise ValueError("Can't save figure if axes are provided.")
+
+        # Do not show
+        if savefig or axes:
+            show = False
 
         if not type(bboxes) == list:
             bboxes = [bboxes]
 
         # Save figure
-        if savefig is not None:
+        if savefig:
             axes = None
             show = False
 
@@ -541,10 +556,10 @@ class BBox:
             # Axis parameters
             ax.axis('equal')
 
-            # Show
-            if show: plt.show()
+        # Show
+        if show: plt.show()
 
-        if savefig:
-            fig.savefig(savefig)
+        # Save figure
+        if savefig: fig.savefig(savefig)
 
         return ax

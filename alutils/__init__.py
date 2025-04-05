@@ -16,3 +16,6 @@ __all__ = ['homogenized', 'dehomogenized', 'normalized', 'ransac',
            'get_logger',
            'kalman_filter'
 ]
+
+import matplotlib.pyplot as plt
+plt.ioff()

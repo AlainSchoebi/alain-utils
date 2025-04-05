@@ -686,24 +686,47 @@ class Pose:
 
     # Visualization functions
     @requires_package('matplotlib')
-    def show(self, axes: Optional[Axes3D] = None,
-             scale: Optional[float] = None) -> Axes3D:
+    def show(self, **args) -> Axes3D:
         """
         Visualize the `Pose` in a 3D matloptlib plot.
         """
-        return Pose.visualize(self, axes, scale)
+        return Pose.visualize(self, **args)
 
 
     @staticmethod
     @requires_package('matplotlib')
-    def visualize(poses: Pose | List[Pose], axes: Optional[Axes3D] = None,
-                  scale: Optional[float] = None) -> Axes3D:
+    def visualize(poses: Pose | List[Pose],
+                  axes: Optional[Axes3D] = None,
+                  savefig: Optional[str] = None,
+                  show: Optional[bool] = True,
+                  scale: Optional[float] = None,
+                  ) -> Axes3D:
         """
-        Visualize a list of `Pose` in a 3D matloptlib plot.
+        Visualize a Pose or a list of Poses in a 3D matloptlib plot.
 
         Inputs
         - poses: `Pose` or `List[Pose]` pose(s) to plot
+
+        Optional Inputs
+        - axes:    `Axes` matplotlib axes to plot on. If not provided, a new
+                   figure will be created.
+        - show:    `bool` whether to show the plot or not. Default is True. If
+                   axes are provided, the plot will not be shown. If savefig is
+                   provided, the plot will not be shown.
+        - savefig: `str` path to save the figure. By default the figure is not
+                   being saved.
+
         """
+
+        # Assertions
+        if savefig and axes:
+            logger.error("Can't save figure if axes are provided.")
+            raise ValueError("Can't save figure if axes are provided.")
+
+        # Do not show
+        if savefig or axes:
+            show = False
+
         if isinstance(poses, Pose):
             poses = [poses]
 
@@ -756,8 +779,14 @@ class Pose:
             ax.axis('equal')
             ax.set_box_aspect([1, 1, 1])
 
-            # Show
-            plt.show()
+        # Show
+        if show: plt.show()
+
+        # Save figure
+        if savefig: fig.savefig(savefig)
+
+        if not show and axes is None:
+            plt.close(fig)
 
         return ax
 

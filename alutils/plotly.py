@@ -147,10 +147,14 @@ def build_plotly_plot(
 
             # If subplot is not directly defined
             if i >= len(plot) or \
-               j >= len(plot[i]) or \
-               plot[i][j] is None:
+               j >= len(plot[i]):
                 specs_row.append({})
                 titles.append("?")
+                continue
+
+            if plot[i][j] is None:
+                specs_row.append({})
+                titles.append("")
                 continue
 
             # Acces entry
@@ -215,6 +219,7 @@ def build_plotly_plot(
     )
 
     # Build plot
+    axes_counter = 0
     for i, row in enumerate(plot):
         for j, entry in enumerate(row):
 
@@ -244,6 +249,10 @@ def build_plotly_plot(
             trace = entry["traces"]
             if isinstance(entry["traces"], list):
                 trace = entry["traces"][0]
+
+            # Count number of usual x-y axes
+            if not isinstance(trace, go.Mesh3d):
+                axes_counter += 1
 
             # Axes labels
             if 'xlabel' in entry:
@@ -293,6 +302,13 @@ def build_plotly_plot(
                     not 'secondary_ylim' in entry:
                     fig.update_xaxes(range=[0, W], row=i+1, col=j+1)
                     fig.update_yaxes(range=[H, 0], row=i+1, col=j+1)
+
+            # Automatic aspect ratio 1:1 for go.Contour as first trace
+            if isinstance(trace, go.Contour):
+                fig.update_xaxes(constrain='domain', row=i+1, col=j+1)
+                fig.update_yaxes(constrain='domain',
+                                 scaleanchor=f'x{axes_counter}',
+                                 row=i+1, col=j+1,)
 
     # Layout
     if height is None:
@@ -402,7 +418,7 @@ def gaussian_1d_traces(
         y=[0, 1/math.sqrt(2 * math.pi * var)],
         mode='lines',
         line=dict(
-            color='cyan',
+            color=color,
             dash='dash'
         ),
         name=f"mean {mu}",
@@ -428,7 +444,9 @@ def gaussian_1d_traces(
 
 @requires_package('plotly')
 def gaussian_2d_traces(
-    mu: NDArray, cov: NDArray, output_size: BBox, S: int = 100
+    mu: NDArray, cov: NDArray, output_size: BBox, S: int = 100,
+    primary_color: str = "cyan", secondary_color: str = "blue",
+    colorscale: str | List = "Viridis"
     ) -> List[go.Contour | go.Scatter]:
     """
     Generates the traces for a 2D Gaussian distribution. It plots the mean, the
@@ -443,6 +461,12 @@ def gaussian_2d_traces(
     - cov: `NDArray(2, 2)` the covariance matrix of the Gaussian distribution.
     - output_size: `BBox` defining the size of the output image.
     - S: `int` the number of points used to draw the ellipses.
+
+    Optional inputs:
+    - primary_color:   `str` the primary color used for drawing the curves.
+    - secondary_color: `str` the secondary color used for drawing the curves.
+    - colorscale:     `str | List[...]` the colorscale used for drawing the
+                       contours.
 
     Returns:
     - traces: `List[go.Contour | go.Scatter]` the traces of the Gaussian
@@ -483,8 +507,8 @@ def gaussian_2d_traces(
     points_2std = points_2std[..., 0] # (S, 2)
 
     # Contour of the Gaussian distribution
-    x = np.linspace(output_size.x, output_size.x2, S) # (S,)
-    y = np.linspace(output_size.y, output_size.y2, S) # (S,)
+    x = np.linspace(output_size.x1, output_size.x2, S) # (S,)
+    y = np.linspace(output_size.y1, output_size.y2, S) # (S,)
     X, Y = np.meshgrid(x, y) # (S, S, 2)
     XY = np.stack([X, Y], axis=-1)[..., None] # (S, S, 2, 1)
     XY = XY - mu[:, None] # (S, S, 2, 1)
@@ -498,7 +522,7 @@ def gaussian_2d_traces(
         mode="markers",
         marker=dict(
             size=5,
-            color="blue",
+            color=primary_color,
             opacity=0.7,
             symbol="cross",
         ),
@@ -510,7 +534,7 @@ def gaussian_2d_traces(
         mode="lines",
         line=dict(
             width=1,
-            color="blue",
+            color=secondary_color,
         ),
         name="1 std",
     )
@@ -520,7 +544,7 @@ def gaussian_2d_traces(
         mode="lines",
         line=dict(
             width=1,
-            color="cyan",
+            color=primary_color,
         ),
         name="2 std",
     )
@@ -528,7 +552,7 @@ def gaussian_2d_traces(
     gaussian_contour_trace = go.Contour(
         x=x, y=y, z=Z,
         contours=dict(coloring='heatmap'),
-        colorscale='Viridis',
+        colorscale=colorscale,
         showscale=False,
         opacity=0.5,
         name="x^T COV^-1 x",
@@ -538,7 +562,7 @@ def gaussian_2d_traces(
             gaussian_ellipse_1std_trace, gaussian_ellipse_2std_trace]
 
 
-def bound_75_percent(x: NDArray):
+def bound_values_nice(x: NDArray):
     return np.median(x[x >= np.median(x)])
 
 
@@ -604,7 +628,7 @@ def bin_to_plot(
 
     # Upper bound of x values to consider
     if max_x is None:
-        max_x = bound_75_percent(x)
+        max_x = bound_values_nice(x)
 
     # Compute bins and bin the y values
     for b in range(num_bins):

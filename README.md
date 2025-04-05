@@ -1,5 +1,5 @@
 # alain-utils
-Various Python utilities including loggers, SE(3) poses, 2D bounding boxes, function decorators, kalman filter, Plotly functions etc.
+Various Python utilities including loggers, SE(3) poses, colors, 2D bounding boxes, function decorators, Kalman filter, Plotly functions etc.
 
 ## Installation
 Clone and install the package via `pip`:
@@ -15,7 +15,7 @@ pip install -e ./alain-utils
 ```
 
 ## Additional packages
-Some utilities might only be available when additional packages are installed, such as matplotlib, pycolmap, cv2, tqdm, rospy, plotly, shapely and cython-bbox.
+Some utilities might only be available when additional packages are installed, such as `matplotlib`, `scipy`, `cv2`, `tqdm`, `rospy`, `plotly`, `shapely`, `pycolmap`, and `cython-bbox`.
 
 ## Tests
 To run tests:

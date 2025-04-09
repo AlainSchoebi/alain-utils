@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 def array_to_latex(array: NDArray, decimals: int = 2) -> str:
     if array.ndim == 1:
-        vals = [f"{x:.2{decimals}}" for x in array]
+        vals = [f"{x:.{decimals}f}" for x in array]
         return r"$\begin{pmatrix} " + r" \\ ".join(vals) + \
                r" \end{pmatrix}$"
     elif array.ndim == 2:

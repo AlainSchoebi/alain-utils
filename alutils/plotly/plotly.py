@@ -320,6 +320,21 @@ def build_plotly_plot(
                 fig.update_yaxes(range=secondary_ylim,
                                  row=i+1, col=j+1, secondary_y=True)
 
+            # Aspect ratio 1:1 for traces with go.Scatter as first plot
+            if 'equal_aspect_ratio' in entry and ( \
+                    not entry['equal_aspect_ratio'] or \
+                    not isinstance(trace, (go.Scatter))
+                ):
+                raise ValueError(
+                    "If `equal_aspect_ratio` is provided it must be set to " +
+                    "`True` and the traces must start with a `go.Scatter` plot."
+                )
+
+            if 'equal_aspect_ratio' in entry and \
+               isinstance(trace, (go.Scatter)):
+                fig.update_yaxes(scaleanchor=f'x{axes_counter}',
+                                 row=i+1, col=j+1)
+
             # Automatic axes bounds for go.Image as first trace
             if isinstance(trace, go.Image):
                 H, W = trace.z.shape[:2]
@@ -329,11 +344,11 @@ def build_plotly_plot(
                     fig.update_yaxes(range=[H, 0], row=i+1, col=j+1)
 
             # Automatic aspect ratio 1:1 for go.Contour as first trace
-            if isinstance(trace, go.Contour):
+            elif isinstance(trace, go.Contour):
                 fig.update_xaxes(constrain='domain', row=i+1, col=j+1)
                 fig.update_yaxes(constrain='domain',
                                  scaleanchor=f'x{axes_counter}',
-                                 row=i+1, col=j+1,)
+                                 row=i+1, col=j+1)
 
     # Layout
     if height is None:

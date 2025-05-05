@@ -16,6 +16,10 @@ dependencies = [
     "numpy",
     "colorama",
     "scipy",
+    # Other optional dependencies
+    # "matplotlib",
+    # "plotly",
+    # "imageio[ffmpeg] >= 2.21.0",  # Ensures FFmpeg support with imageio
 ]
 
 [tool.setuptools]

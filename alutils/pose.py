@@ -510,9 +510,9 @@ class Pose:
         Inputs
         - angles: `NDArray(3,)`, `Tuple` or `List` the Euler angles in radians
                   (or degrees)
-        - seq: `str` the sequence of axis of rotation. The string must contain
-               exactly 3 characters belonging to the set 'x', 'y', 'z'. Adjacent
-               axes cannot be the same.
+        - seq:    `str` the sequence of axis of rotation. The string must
+                  contain exactly 3 characters belonging to the set 'x', 'y',
+                  'z'. Adjacent axes cannot be the same.
         """
 
         if not len(seq) == 3 or not all([c in 'xyz' for c in seq]) or \

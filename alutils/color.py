@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Typing
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 
 # Python
 import re

@@ -9,7 +9,6 @@ from typing import Tuple
 from .pose import Pose
 from .base import homogenized, dehomogenized
 
-
 def get_homogeneous_pixels_array(image_shape: Tuple[int]) -> NDArray:
 
     """

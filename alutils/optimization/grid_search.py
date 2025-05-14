@@ -1,5 +1,5 @@
 # Typing
-from typing import List, Tuple, Callable, TypeVar
+from typing import List, Tuple, Callable, TypeVar, cast
 
 # NumPy
 import numpy as np
@@ -13,7 +13,7 @@ from alutils import get_logger
 logger = get_logger(__name__)
 
 # Structures
-Point = TypeVar("Point", bound=NDArray)
+Point = TypeVar("Point")
 
 class AllPointsInfeasibleError(Exception):
     """
@@ -54,7 +54,7 @@ def grid_search_min(
     costs: np.ma.MaskedArray = np.ma.zeros([len(p) for p in points])
 
     # Point from index function
-    def point_from_index(index: Tuple[int]) -> NDArray:
+    def point_from_index(index: Tuple[int, ...]) -> Point | None:
         point = np.array([points[i][index[i]] for i in range(len(points))])
         return point_transform(point)
 
@@ -88,7 +88,7 @@ def grid_search_min(
     )
 
     # Return the minimum point, its cost and the costs grid
-    return min_point, min_cost, costs
+    return cast(Point, min_point), min_cost, costs
 
 def grid_search_max(
     points: List[NDArray],

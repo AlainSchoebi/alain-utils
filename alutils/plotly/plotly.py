@@ -100,8 +100,8 @@ def build_plotly_plot(
     # Boolean matrix indicating whether each subplot is "overwritten" by a
     # colspan/rowspan or not
     is_span = np.full((rows, cols), fill_value=False, dtype=bool)
-    for i in range(rows):
-        for j in range(cols):
+    for i in range(len(plot)):
+        for j in range(len(plot)):
             if j >= len(plot[i]) or plot[i][j] is None:
                 continue
             rowspan, colspan = 1, 1
@@ -352,7 +352,7 @@ def build_plotly_plot(
 
     # Layout
     if height is None:
-        height = 400 * len(plot)
+        height = 400 * rows
     fig.update_layout(title=title, showlegend=False, height=height,
                       **scatter_3d_viewpoints, hovermode=hover_mode)
 

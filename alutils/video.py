@@ -1,5 +1,5 @@
 # Typing
-from typing import List, Optional
+from typing import Optional
 
 # NumPy
 import numpy as np
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 
 @requires_package('imageio', 'tqdm')
 def generate_video(
-    images: List[Path] | List[str],
+    images: list[Path] | list[str],
     video_filename: str | Path,
     fps: Optional[int] = None,
     duration: Optional[float] = None,
@@ -39,7 +39,7 @@ def generate_video(
     Generate a video from a list of images using imageio.
 
     Inputs
-    - images: `List[Path | str] list of images to be included in the video.
+    - images: `list[Path | str] list of images to be included in the video.
     - video_filename: `str | Path` name of the output video file.
 
     Partially Required Inputs

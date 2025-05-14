@@ -1,6 +1,6 @@
 # Typing
 from __future__ import annotations
-from typing import Callable, Any, Tuple, NewType
+from typing import Callable, Any, NewType
 
 # Numpy
 import numpy as np
@@ -19,7 +19,7 @@ def ransac(
     threshold: float,
     outlier_ratio: float = None,
     n_iterations: int = None
-    ) -> Tuple[Any, NDArray]:
+    ) -> tuple[Any, NDArray]:
     """
     RANSAC method finding the best model while rejecting outlier data points.
 

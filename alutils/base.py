@@ -104,3 +104,39 @@ def lower_triangular_to_symmetric(x_flat: NDArray, n: int) -> NDArray:
     X[..., ii[0], ii[1]] = x_flat
     X[..., ii[1], ii[0]] = x_flat
     return X
+
+def extract_lower_triangular(x: NDArray) -> NDArray:
+    """
+    Flatten matrix or matrices to lower triangular part(s). The function assumes
+    that each input matrix is of dimension `(n, n)`. It returns a flattened
+    array or arrays of shape `(n*(n + 1)/2, )`.
+
+    Inputs:
+    - x: `NDArray(..., n, n)` matrix or matrices.
+
+    Returns:
+    - x_flat: `NDArray(..., n*(n + 1)/2, )` flattened array(s) representing the
+              lower triangular part(s) of the input matrix or matrices.
+
+    Note: the function does not verify the symmetry of the input matrix or
+          matrices. That is, the input matrix or matrices do not need to be
+          symmetric.
+    """
+    # Dimension checks
+    n = x.shape[-1]
+    if not x.shape[-2:] == (n, n):
+        raise ValueError(
+            "Input array `x` is not of the correct shape. " +
+            f"Expected (..., {n}, {n}), got {x.shape}."
+        )
+
+    # Get the lower triangular indices of the matrix
+    ii = np.tril_indices(n) # (2, n*(n + 1)/2)
+
+    # Build the flattened array
+    x_flat = np.zeros((*x.shape[:-2], n * (n + 1) // 2)) # (..., n*(n + 1)/2)
+    x_flat[..., ii[0], ii[1]] = x
+    return x_flat
+
+class RuntimeUnreachableError(RuntimeError):
+    pass

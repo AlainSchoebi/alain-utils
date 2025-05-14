@@ -25,20 +25,33 @@ from alutils.bbox import BBox
 from alutils.loggers import get_logger
 logger = get_logger(__name__)
 
-def array_to_latex(array: NDArray, decimals: int = 2) -> str:
+def array_to_latex(
+        array: NDArray,
+        *,
+        decimals: int = 2,
+        max_dimension: int | None = None,
+    ) -> str:
+    if not isinstance(array, np.ndarray):
+        raise TypeError(f"Expected input `array` to be of type `NDArray`, " +
+                        f"but found `{type(array)}`.")
+
+    # Matrix larger than `max_dimension` or more than 2 dimensions (tensor)
+    if max_dimension is not None and \
+       any(d > max_dimension for d  in array.shape) or array.ndim > 2:
+        return r"$" + (r"\times").join(map(str, array.shape)) + \
+               r"\text{ matrix}$"
+    # Vector R^n
     if array.ndim == 1:
         vals = [f"{x:.{decimals}f}" for x in array]
         return r"$\begin{pmatrix} " + r" \\ ".join(vals) + \
                r" \end{pmatrix}$"
+    # Matrix R^{m x n}
     elif array.ndim == 2:
         rows = [" & ".join(f"{x:.{decimals}f}" for x in row) for row in array]
         return r"$\begin{pmatrix} " + r" \\ ".join(rows) + \
                r" \end{pmatrix}$"
     else:
-        raise NotImplementedError(
-            f"Cannot convert array of dimension {array.ndim} to LaTeX. " +
-            f"Only 1D and 2D arrays are supported."
-        )
+        raise NotImplementedError(f"This error should not be raised.")
 
 @requires_package("shapely")
 def get_2d_boundary(vertices: NDArray, faces: NDArray) -> List[NDArray]:

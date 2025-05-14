@@ -1,5 +1,5 @@
 from .base import homogenized, dehomogenized, normalized, \
-    lower_triangular_to_symmetric
+    lower_triangular_to_symmetric, RuntimeUnreachableError
 from .pose import Pose
 from .ransac import ransac
 from .bbox import BBox
@@ -11,7 +11,7 @@ from . import kalman_filter
 
 __all__ = [
     'homogenized', 'dehomogenized', 'normalized',
-    'lower_triangular_to_symmetric',
+    'lower_triangular_to_symmetric', "RuntimeUnreachableError",
     'ransac',
     'Pose',
     'BBox',

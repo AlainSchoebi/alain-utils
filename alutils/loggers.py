@@ -28,7 +28,7 @@ def markdown_to_text(md: str) -> Tuple[str, bool]:
 
 
 def get_logger(name: str = "my_logger",
-               log_file: str = None,
+               log_file: str | Path = None,
                console_log_level: int = logging.DEBUG,
                log_file_level: int = logging.DEBUG,
                console_format: str = None) -> Logger:
@@ -49,14 +49,20 @@ def get_logger(name: str = "my_logger",
 
     # Create log file or empty the log file
     if log_file is not None:
-        if Path(log_file).exists(): Path(log_file).unlink()
-        f = open(log_file, "x"); f.close()
+        log_file = Path(log_file)
+        if log_file.exists():
+            log_file.unlink()
+        try:
+            f = open(log_file, "x")
+        except FileNotFoundError as e:
+            raise e
+        f.close()
 
         # File handler
         file_handler = logging.FileHandler(log_file)
         file_handler.setLevel(log_file_level)
 
-        if log_file[-3:] == ".md":
+        if log_file.suffix == ".md":
             file_handler.setFormatter(KeepMarkdownFormatter())
         else:
             file_handler.setFormatter(logging.Formatter("%(message)s"))

@@ -1,20 +1,17 @@
-# Typing
-from typing import Dict
-
 # Logging
 from .loggers import get_logger
 logger = get_logger(__name__)
 
-def update_config_dict(config_to_update: Dict,
-                       config_to_add: Dict,
-                       default_config: Dict) -> None:
+def update_config_dict(config_to_update: dict,
+                       config_to_add: dict,
+                       default_config: dict) -> None:
     """
     Set partial configuration.
 
     Inputs
-    - config_to_edit: `Dict` base configuration which will be updated
-    - config_to_add:  `Dict` partial configuration to add
-    - default_config: `Dict` default configuration used for checking the
+    - config_to_edit: `dict` base configuration which will be updated
+    - config_to_add:  `dict` partial configuration to add
+    - default_config: `dict` default configuration used for checking the
                        types and names of the arguments.
 
     Note: the values of the `config_to_add` configuration are not being copied.

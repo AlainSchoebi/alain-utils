@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 # Python
-from typing import Dict, Any, List, List, Optional, Tuple
+from typing import Any, Optional
 from pathlib import Path
 import math
 
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 @requires_package('plotly')
 def build_plotly_plot(
-    plot: List[List[Dict[str, Any]]],
+    plot: list[list[dict[str, Any]]],
     title: Optional[str] = "",
     height: Optional[int | None] = None,
     open_browser: Optional[bool] = True,
@@ -41,25 +41,25 @@ def build_plotly_plot(
     describes a subplot of the plot.
 
     Inputs:
-    - plot: `List[List[Dict[str, Any]]]` the 2D list of dictionaries describing
+    - plot: `list[list[dict[str, Any]]]` the 2D list of dictionaries describing
             the plot.
 
     Each entry in the 2D list of dictionaries MUST have the following keys:
     - title: `str` the title of the subplot.
-    - traces: `go.Scatter | go.Image ... | List[go.Scatter | go.Image | ...]`
+    - traces: `go.Scatter | go.Image ... | list[go.Scatter | go.Image | ...]`
                the trace(s) of the subplot.
 
     Each entry in the 2D list of dictionaries CAN have the optional keys:
     - rowspan: `int` the number of rows spanned by the subplot.
     - colspan: `int` the number of columns spanned by the subplot.
-    - xlim: `List[float, float]` the x-axis limits.
-    - ylim: `List[float, float]` the y-axis limits.
-    - secondary_ylim: `List[float, float]` the secondary y-axis limits.
-    - viewpoint: `Dict[str, float]` the viewpoint of the 3D plot.
+    - xlim: `list[float, float]` the x-axis limits.
+    - ylim: `list[float, float]` the y-axis limits.
+    - secondary_ylim: `list[float, float]` the secondary y-axis limits.
+    - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
     - xlabel: `str` the label of the x-axis.
     - ylabel: `str` the label of the y-axis.
     - secondary_ylabel: `str` the label of the secondary y-axis.
-    - secondary_y_axis_trace_idx: `List[int]` the indices of which traces should
+    - secondary_y_axis_trace_idx: `list[int]` the indices of which traces should
                                   be plotted on the secondary y-axis.
 
     Optional Inputs:
@@ -328,7 +328,7 @@ def build_plotly_plot(
 
 
 @requires_package('shapely')
-def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> List[NDArray]:
+def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> list[NDArray]:
     """
     Computes the 2D boundary of a 2D mesh defined by its vertices and faces.
 
@@ -337,7 +337,7 @@ def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> List[NDArray]:
     - faces: `NDArray(M, 3)` of integers representing the faces of the mesh.
 
     Returns
-    - boundaries: `List[NDArray(N, 2)]` the 2D boundaries of the mesh. Since the
+    - boundaries: `list[NDArray(N, 2)]` the 2D boundaries of the mesh. Since the
                   mesh can be composed of multiple disjoint parts, the
                   boundaries are returned as a list of 2D vertices.
     """
@@ -371,7 +371,7 @@ def get_2d_boundary(vertices: NDArray, faces: NDArray ) -> List[NDArray]:
 @requires_package('plotly')
 def gaussian_1d_traces(
     mu: float, var: float, *values: float, S: int = 100,
-    color: Optional[str] = 'cyan') -> List[go.Contour | go.Scatter]:
+    color: Optional[str] = 'cyan') -> list[go.Contour | go.Scatter]:
     """
     Generates the traces for a 1D Gaussian distribution. It plots the PDF.
 
@@ -385,7 +385,7 @@ def gaussian_1d_traces(
     - S: `int` the number of points used to draw the PDF.
 
     Returns:
-    - traces: `List[go.Scatter]` the traces of the Gaussian distribution.
+    - traces: `list[go.Scatter]` the traces of the Gaussian distribution.
     """
 
     if var <= 0:
@@ -446,8 +446,8 @@ def gaussian_1d_traces(
 def gaussian_2d_traces(
     mu: NDArray, cov: NDArray, output_size: BBox, S: int = 100,
     primary_color: str = "cyan", secondary_color: str = "blue",
-    colorscale: str | List = "Viridis"
-    ) -> List[go.Contour | go.Scatter]:
+    colorscale: str | list = "Viridis"
+    ) -> list[go.Contour | go.Scatter]:
     """
     Generates the traces for a 2D Gaussian distribution. It plots the mean, the
     1 standard deviation and the 2 standard deviation ellipses, and the contour
@@ -465,11 +465,11 @@ def gaussian_2d_traces(
     Optional inputs:
     - primary_color:   `str` the primary color used for drawing the curves.
     - secondary_color: `str` the secondary color used for drawing the curves.
-    - colorscale:     `str | List[...]` the colorscale used for drawing the
+    - colorscale:     `str | list[...]` the colorscale used for drawing the
                        contours.
 
     Returns:
-    - traces: `List[go.Contour | go.Scatter]` the traces of the Gaussian
+    - traces: `list[go.Contour | go.Scatter]` the traces of the Gaussian
                distribution.
     """
 
@@ -571,7 +571,7 @@ def bin_to_plot(
     num_bins: Optional[int] = 100,
     min_x: Optional[float] = 0, max_x: Optional[float | None] = None,
     return_y_cov: Optional[float] = False
-    ) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
+    ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Bin some (x, y) datapoints into bins in order to plot them.
 

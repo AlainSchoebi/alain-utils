@@ -48,6 +48,10 @@ def build_plotly_plot(
     - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
     - xlabel: `str` the label of the x-axis.
     - ylabel: `str` the label of the y-axis.
+    - log_scale_x: `bool` whether to use a logarithmic scale for the x-axis.
+    - log_scale_y: `bool` whether to use a logarithmic scale for the y-axis.
+    - secondary_log_scale_y: `bool` whether to use a logarithmic scale
+                             for the secondary y-axis.
     - secondary_ylabel: `str` the label of the secondary y-axis.
     - secondary_y_axis_trace_idx: `list[int]` the indices of which traces should
                                   be plotted on the secondary y-axis.
@@ -279,6 +283,17 @@ def build_plotly_plot(
                 fig.update_yaxes(title_text=entry['secondary_ylabel'],
                                  row=i+1, col=j+1, secondary_y=True)
 
+            # Axes scale
+            if 'log_sale_x' in entry and entry['log_scale_x']:
+                fig.update_xaxes(type='log', row=i+1, col=j+1)
+            if 'log_scale_y' in entry and entry['log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=False)
+            if 'secondary_log_scale_y' in entry and \
+               entry['secondary_log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=True)
+
             # Shared x-axis
             if 'shared_x_axis_identifier' in entry:
                 idx = shared_x_axis_identifiers \
@@ -291,12 +306,14 @@ def build_plotly_plot(
                     )
 
             # Axes limits
-            if not isinstance(trace, (go.Scatter, go.Contour, go.Image)) and \
+            if not isinstance(trace, (go.Scatter, go.Contour,
+                                      go.Image, go.Histogram)) and \
                 any([k in entry for k in ['xlim', 'ylim', 'secondary_ylim']]):
                 raise ValueError(
-                    f"Using properties `xlim`, `ylim` or `secondary_ylim` is " +
-                    f"only supported when using `Scatter`, `Contour` or " +
-                    f"`Image` plots. Found plot type `{type(trace)}`.")
+                    f"Using properties `xlim`, `ylim` or `secondary_ylim` is "
+                    f"only supported when using `Scatter`, `Contour`, `Image` "
+                    f"or `Histogram` plots. Found plot type `{type(trace)}`."
+                )
 
             if 'xlim' in entry:
                 xlim = entry['xlim']
@@ -360,13 +377,23 @@ def build_plotly_plot(
 
     # Save HTML file
     if output_html is not None:
+        if not Path(output_html).parent.exists():
+            logger.error(
+                f"The directory '{Path(output_html).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
+            raise FileNotFoundError(
+                f"The directory '{Path(output_html).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
         fig.write_html(str(output_html), include_mathjax='cdn')
 
     # Open browser
     if open_browser:
         fig.show()
 
-    # Debugging layout
-    logger.debug(fig.layout)
+    # Log
+    logger.info(f"Successfully built Plotly plot `{title}` to `{output_html}`.")
+    logger.debug(fig.layout) # log layout for debugging purposes
 
     return None

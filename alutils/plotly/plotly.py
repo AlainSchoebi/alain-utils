@@ -48,6 +48,10 @@ def build_plotly_plot(
     - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
     - xlabel: `str` the label of the x-axis.
     - ylabel: `str` the label of the y-axis.
+    - log_scale_x: `bool` whether to use a logarithmic scale for the x-axis.
+    - log_scale_y: `bool` whether to use a logarithmic scale for the y-axis.
+    - secondary_log_scale_y: `bool` whether to use a logarithmic scale
+                             for the secondary y-axis.
     - secondary_ylabel: `str` the label of the secondary y-axis.
     - secondary_y_axis_trace_idx: `list[int]` the indices of which traces should
                                   be plotted on the secondary y-axis.
@@ -278,6 +282,17 @@ def build_plotly_plot(
             if 'secondary_ylabel' in entry:
                 fig.update_yaxes(title_text=entry['secondary_ylabel'],
                                  row=i+1, col=j+1, secondary_y=True)
+
+            # Axes scale
+            if 'log_sale_x' in entry and entry['log_scale_x']:
+                fig.update_xaxes(type='log', row=i+1, col=j+1)
+            if 'log_scale_y' in entry and entry['log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=False)
+            if 'secondary_log_scale_y' in entry and \
+               entry['secondary_log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=True)
 
             # Shared x-axis
             if 'shared_x_axis_identifier' in entry:

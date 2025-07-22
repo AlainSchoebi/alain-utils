@@ -18,9 +18,9 @@ def update_config_dict(config_to_update: dict,
           That is, the `config_to_update` will contain the same objects.
     """
 
-    if not type(config_to_update) == dict or \
-       not type(config_to_add) == dict or \
-       not type(default_config) == dict:
+    if not isinstance(config_to_update, dict) or \
+       not isinstance(config_to_add, dict) or \
+       not isinstance(default_config, dict):
        logger.error("The configurations must be dictionaries.")
        raise ValueError("The configurations must be dictionaries.")
 
@@ -36,7 +36,7 @@ def update_config_dict(config_to_update: dict,
             default_type = type(default_config[key])
 
             # Same type
-            if type(value) == default_type:
+            if isinstance(value, default_type):
                 config_to_update[key] = value
 
             # Try to convert the value to the default type
@@ -52,5 +52,6 @@ def update_config_dict(config_to_update: dict,
                                      f"value has type {type(value)}.")
 
         else:
-            update_config_dict(config_to_update[key], value,
-                               default_config[key])
+            update_config_dict(
+                config_to_update[key], value, default_config[key]
+            )

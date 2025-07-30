@@ -2,7 +2,7 @@
 import numpy as np
 
 # Python
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 from pathlib import Path
 
 # Plotly
@@ -24,7 +24,8 @@ def build_plotly_plot(
         height: Optional[int | None] = None,
         open_browser: Optional[bool] = True,
         output_html: Optional[str | Path | None] = None,
-        hover_mode: str = 'x unified'
+        hover_mode: Literal['x', 'y', 'x unified', 'y unified',
+                            'closest', 'False'] = 'x unified'
     ) -> None:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
@@ -65,7 +66,8 @@ def build_plotly_plot(
                     `True`.
     - output_html:  `str | Path | None` the path to save the plot as an HTML
                     file. Default is `None`.
-    - hover_mode:    `str` the hover mode. Default is `x unified`.
+    - hover_mode:   `str` the hover mode for all the subplot. Default is
+                    `x unified`.
     """
 
     rows = len(plot)

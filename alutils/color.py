@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Typing
-from typing import cast
+from typing import cast, Iterator
 
 # Python
 import re
@@ -12,6 +12,9 @@ from numpy.typing import NDArray
 
 # Matplotlib
 from matplotlib import colors as mcolors
+
+# Utils
+from alutils.types import Number
 
 class Color:
     """
@@ -182,6 +185,7 @@ class Color:
                         values = tuple(map(float, re.findall(r'\d+', arg)))
                     except:
                         invalid_string()
+                        raise
 
                     if not len(values) == 3 or len(values) == 4 or \
                        not all(int(v) == float(v) for v in values[:3]):
@@ -410,11 +414,10 @@ class Color:
             raise TypeError("Alpha value must be a `float` or `None`.")
 
     # Unpacking
-    def __iter__(self: Color) -> tuple[float, float, float] | \
-                                 tuple[float, float, float, float]:
+    def __iter__(self: Color) -> Iterator[float]:
         """ Unpack the color to `(r, g, b)` or `(r, g, b, a)` """
         if self.has_alpha:
-            return iter(self.rgba_tuple)
+            return iter(self.rgba_tuple())
         else:
             return iter(self.rgb_tuple)
 
@@ -449,39 +452,34 @@ class Color:
         """ RGB array `NDArray` """
         return np.array(self.rgb_int_tuple)
 
-    @property
     def rgba_tuple(self, opacity: float | None = None) \
         -> tuple[float, float, float, float]:
         """ RGBA tuple `(float, float, float, float)` """
         color = self.with_opacity(opacity)
         return color.rgb_tuple + (cast(float, color.a),)
 
-    @property
     def rgba_int_tuple(self, opacity: float | None = None) \
         -> tuple[int, int, int, float]:
         """ RGBA tuple `(int, int, int, float)` """
         color = self.with_opacity(opacity)
         return color.rgb_int_tuple + (cast(float, color.a),)
 
-    @property
     def rgba_list(self, opacity: float | None = None) \
         -> list[float]:
         """ RGBA list `[float, float, float, float]` """
         color = self.with_opacity(opacity)
-        return list(color.rgba_tuple)
+        return list(color.rgba_tuple())
 
-    @property
     def rgba_int_list(self, opacity: float | None = None) \
         -> list[int | float]:
         """ RGBA list `[int, int, int, float]` """
         color = self.with_opacity(opacity)
-        return list(color.rgba_int_tuple)
+        return list(color.rgba_int_tuple())
 
-    @property
     def rgba_array(self, opacity: float | None = None) -> NDArray:
         """ RGBA array `NDArray` """
         color = self.with_opacity(opacity)
-        return np.array(color.rgba_tuple)
+        return np.array(color.rgba_tuple())
 
     # Strings
     def rgb_string(self) -> str:
@@ -498,9 +496,9 @@ class Color:
     def hex(self) -> str:
         """ Hexadecimal string `#rrggbb` or `#rrggbbaa` """
         if self.has_alpha:
-            return mcolors.to_hex(self.rgba_array, keep_alpha=True)
+            return mcolors.to_hex(self.rgba_tuple(), keep_alpha=True)
         else:
-            return mcolors.to_hex(self.rgb_array)
+            return mcolors.to_hex(self.rgb_tuple)
 
     # HSV representation
     @property
@@ -551,33 +549,33 @@ class Color:
 
     # Operations
     def __mul__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Multiply color rgb(a) components by a scalar """
-        if not isinstance(scalar, (float, int)):
+        if not isinstance(scalar, Number):
             raise TypeError("Invalid type for multiplication.")
         if scalar < 0:
             raise ValueError("Scalar must be a non-negative number.")
 
         if self.has_alpha:
-            return Color(np.clip(self.rgba_array * scalar, 0, 1))
+            return Color(np.clip(self.rgba_array() * scalar, 0, 1))
         else:
             return Color(np.clip(self.rgb_array * scalar, 0, 1))
 
     def __rmul__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Multiply color rgb(a) components by a scalar """
         return self * scalar
 
     def __truediv__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Divide color rgb(a) components by a scalar """
         return self * (1/scalar)
 
     # Equality
-    def __eq__(self: Color, other: Color) -> bool:
+    def __eq__(self: Color, other: object) -> bool:
         """ Check if two colors are equal """
         if not isinstance(other, Color):
             return False
@@ -605,7 +603,8 @@ class Color:
 
         if color1.has_alpha:
             return Color(
-                color1.rgba_array + (color2.rgba_array - color1.rgba_array) * t
+                color1.rgba_array() + \
+                    (color2.rgba_array() - color1.rgba_array()) * t
             )
         else:
             return Color(

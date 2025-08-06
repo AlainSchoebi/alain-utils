@@ -25,7 +25,8 @@ def build_plotly_plot(
         open_browser: Optional[bool] = True,
         output_html: Optional[str | Path | None] = None,
         hover_mode: Literal['x', 'y', 'x unified', 'y unified',
-                            'closest', 'False'] = 'x unified'
+                            'closest', 'False'] = 'x unified',
+        bar_mode: Literal['group', 'overlay', 'stack', 'relative'] = 'group',
     ) -> None:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
@@ -66,8 +67,9 @@ def build_plotly_plot(
                     `True`.
     - output_html:  `str | Path | None` the path to save the plot as an HTML
                     file. Default is `None`.
-    - hover_mode:   `str` the hover mode for all the subplot. Default is
-                    `x unified`.
+    - hover_mode:   `x | y | x unified | y unified | closest | False`ethe hover
+                    mode for all the subplot. Default is `x unified`.
+    - bar_mode:     TODO
     """
 
     rows = len(plot)
@@ -374,8 +376,14 @@ def build_plotly_plot(
     # Layout
     if height is None:
         height = 400 * rows
-    fig.update_layout(title=title, showlegend=False, height=height,
-                      **scatter_3d_viewpoints, hovermode=hover_mode)
+    fig.update_layout(
+        title=title,
+        showlegend=False,
+        height=height,
+        **scatter_3d_viewpoints,
+        hovermode=hover_mode,
+        barmode=bar_mode,
+    )
 
     # Save HTML file
     if output_html is not None:

@@ -30,7 +30,7 @@ jobs:
     - name: Install package and dependencies
       run: |
         pip install .
-        conda install matplotlib
+        pip install matplotlib
         pip install pycolmap
         pip install cython-bbox
 

@@ -1,13 +1,10 @@
-# Typing
-from typing import List, Tuple
-
 # Python
 import logging
 from logging import Logger
 from pathlib import Path
 from colorama import Fore, Style
 
-def get_all_loggers_name() -> List[str]:
+def get_all_loggers_name() -> list[str]:
     return list(Logger.manager.loggerDict.keys())
 
 
@@ -16,7 +13,7 @@ def set_all_loggers_level_to(level: int = logging.WARNING):
         logging.getLogger(name).setLevel(level)
 
 
-def markdown_to_text(md: str) -> Tuple[str, bool]:
+def markdown_to_text(md: str) -> tuple[str, bool]:
     bold = False
     while len(md) > 0 and (md[0] == '#' or md[0] == '*'):
         md = md[1:]

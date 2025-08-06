@@ -137,3 +137,7 @@ def extract_lower_triangular(x: NDArray) -> NDArray:
     x_flat = np.zeros((*x.shape[:-2], n * (n + 1) // 2)) # (..., n*(n + 1)/2)
     x_flat[..., ii[0], ii[1]] = x
     return x_flat
+
+class RuntimeUnreachableError(RuntimeError):
+    pass
+

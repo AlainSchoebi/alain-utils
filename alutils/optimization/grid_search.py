@@ -1,5 +1,5 @@
 # Typing
-from typing import List, Tuple, Callable, TypeVar
+from typing import Callable, TypeVar, cast
 
 # NumPy
 import numpy as np
@@ -13,7 +13,7 @@ from alutils import get_logger
 logger = get_logger(__name__)
 
 # Structures
-Point = TypeVar("Point", bound=NDArray)
+Point = TypeVar("Point")
 
 class AllPointsInfeasibleError(Exception):
     """
@@ -22,16 +22,16 @@ class AllPointsInfeasibleError(Exception):
     pass
 
 def grid_search_min(
-    points: List[NDArray],
+    points: list[NDArray],
     point_transform: Callable[[NDArray], Point | None],
     feasible: Callable[[Point], bool],
     cost: Callable[[Point], float],
-) -> Tuple[Point, float, np.ma.MaskedArray]:
+) -> tuple[Point, float, np.ma.MaskedArray]:
     """
     Perform a grid search over the given points in the search for a minimum.
 
     Inputs
-    - points:          `List[NDArray]` list of points to search over. Each point
+    - points:          `list[NDArray]` list of points to search over. Each point
                        array is a 1D array of coordinates.
     - point_transform: `Callable[[NDArray], Point | None]` function to transform
                        the point coordinates into the desired format. The
@@ -54,7 +54,7 @@ def grid_search_min(
     costs: np.ma.MaskedArray = np.ma.zeros([len(p) for p in points])
 
     # Point from index function
-    def point_from_index(index: Tuple[int]) -> NDArray:
+    def point_from_index(index: tuple[int, ...]) -> Point | None:
         point = np.array([points[i][index[i]] for i in range(len(points))])
         return point_transform(point)
 
@@ -88,19 +88,19 @@ def grid_search_min(
     )
 
     # Return the minimum point, its cost and the costs grid
-    return min_point, min_cost, costs
+    return cast(Point, min_point), min_cost, costs
 
 def grid_search_max(
-    points: List[NDArray],
+    points: list[NDArray],
     point_transform: Callable[[NDArray], Point | None],
     feasible: Callable[[Point], bool],
     cost: Callable[[Point], float],
-) -> Tuple[Point, float, np.ma.MaskedArray]:
+) -> tuple[Point, float, np.ma.MaskedArray]:
     """
     Perform a grid search over the given points in the search for a maximum.
 
     Inputs
-    - points:          `List[NDArray]` list of points to search over. Each point
+    - points:          `list[NDArray]` list of points to search over. Each point
                        array is a 1D array of coordinates.
     - point_transform: `Callable[[NDArray], Point | None]` function to transform
                        the point coordinates into the desired format. The

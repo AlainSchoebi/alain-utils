@@ -1,6 +1,3 @@
-# Typing
-from typing import Tuple, List
-
 # SymPy
 try:
     import sympy as sp
@@ -12,8 +9,8 @@ from ..decorators import requires_package
 
 @requires_package("sympy")
 def quadratic_polynomial_Abc(
-        expr: sp.Expr, vars: List[sp.Symbol] | Tuple[sp.Symbol],
-    ) -> Tuple[sp.Matrix, sp.Matrix, sp.Expr]:
+        expr: sp.Expr, vars: list[sp.Symbol] | tuple[sp.Symbol],
+    ) -> tuple[sp.Matrix, sp.Matrix, sp.Expr]:
     """
     Given a symbolic quadratic expression depending on `n` variables, this
     function computes the corresponding quadratic form:
@@ -58,3 +55,4 @@ def quadratic_polynomial_Abc(
     c = poly.coeff_monomial(1)
 
     return A, b, c
+

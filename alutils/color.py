@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Typing
-from typing import Tuple, List
+from typing import cast, Iterator
 
 # Python
 import re
@@ -12,6 +12,9 @@ from numpy.typing import NDArray
 
 # Matplotlib
 from matplotlib import colors as mcolors
+
+# Utils
+from alutils.types import Number
 
 class Color:
     """
@@ -126,9 +129,8 @@ class Color:
         if len(args) == 1:
             arg = args[0]
 
-            # Tuple
+            # tuple
             if isinstance(arg, tuple):
-                arg: tuple
                 if len(arg) not in (3, 4):
                     raise ValueError(
                         f"Invalid tuple length for color constructor: " + \
@@ -146,13 +148,12 @@ class Color:
                 if len(arg) == 4:
                     self.a = arg[3]
 
-            # List
+            # list
             elif isinstance(arg, list):
                 Color.__init__(self, tuple(arg))
 
             # NDArray
             elif isinstance(arg, np.ndarray):
-                arg: np.ndarray
                 if arg.ndim != 1 or len(arg) not in (3, 4):
                     raise ValueError(
                         f"Invalid NDArray length for color constructor: " + \
@@ -166,14 +167,9 @@ class Color:
                         f"{arg.dtype}. Expected `int` or `float`."
                     )
                 Color.__init__(self, arg.tolist())
-                #c = Color(arg.tolist())
-                #self.__r, self.__g, self.__b = c.r, c.g, c.b
-                #if c.has_alpha: self.__a = c.a
 
             # String
             elif isinstance(arg, str):
-                arg: str
-
                 # Examples: "rgb(255, 12, 120)" or "rgba(255, 255, 231, 135)"
                 if arg.startswith("rgb"):
 
@@ -189,6 +185,7 @@ class Color:
                         values = tuple(map(float, re.findall(r'\d+', arg)))
                     except:
                         invalid_string()
+                        raise
 
                     if not len(values) == 3 or len(values) == 4 or \
                        not all(int(v) == float(v) for v in values[:3]):
@@ -197,11 +194,25 @@ class Color:
                     a = values[3] if len(values) == 4 else None
                     Color.__init__(self, tuple(int(v) for v in values[:3]), a=a)
 
+                # Hexadecimal color
                 elif arg.startswith("#"):
-                    raise NotImplementedError(
-                        "Hexadecimal color strings are not yet supported."
-                    )
+                    try:
+                        if len(arg) == 7:
+                            Color.__init__(self, mcolors.to_rgb(arg))
+                        elif len(arg) == 9:
+                            Color.__init__(self, mcolors.to_rgba(arg))
+                        else:
+                            raise ValueError(
+                                f"Invalid hexadecimal color string length: " +
+                                f"{len(arg)}. Expected 7 or 9 characters."
+                            )
+                    except Exception as e:
+                        raise ValueError(
+                            f"Invalid string for hexadecimal color " +
+                            f"constructor. Error: {arg}. "
+                        )
 
+                # Known strings
                 else:
                     try:
                         rgb = mcolors.to_rgb(arg)
@@ -303,8 +314,8 @@ class Color:
         return Color(mcolors.hsv_to_rgb(hsv), opacity=opacity)
 
     @staticmethod
-    def random(self) -> Color:
-        pass
+    def random() -> Color:
+        return Color(np.random.rand(3))
 
     # R, G, B, A properties
     @property
@@ -403,8 +414,7 @@ class Color:
             raise TypeError("Alpha value must be a `float` or `None`.")
 
     # Unpacking
-    def __iter__(self: Color) -> Tuple[float, float, float] | \
-                                 Tuple[float, float, float, float]:
+    def __iter__(self: Color) -> Iterator[float]:
         """ Unpack the color to `(r, g, b)` or `(r, g, b, a)` """
         if self.has_alpha:
             return iter(self.rgba_tuple)
@@ -413,22 +423,22 @@ class Color:
 
     # RGB and RGBA properties
     @property
-    def rgb_tuple(self) -> Tuple[float, float, float]:
+    def rgb_tuple(self) -> tuple[float, float, float]:
         """ RGB tuple `(float, float, float)` """
         return (self.r, self.g, self.b)
 
     @property
-    def rgb_int_tuple(self) -> Tuple[int, int, int]:
+    def rgb_int_tuple(self) -> tuple[int, int, int]:
         """ RGB tuple `(int, int, int)` """
         return (self.r_int, self.g_int, self.b_int)
 
     @property
-    def rgb_list(self) -> List[float]:
+    def rgb_list(self) -> list[float]:
         """ RGB list `[float, float, float]` """
         return list(self.rgb_tuple)
 
     @property
-    def rgb_int_list(self) -> List[int]:
+    def rgb_int_list(self) -> list[int]:
         """ RGB list `[int, int, int]` """
         return list(self.rgb_int_tuple)
 
@@ -444,28 +454,28 @@ class Color:
 
     @property
     def rgba_tuple(self, opacity: float | None = None) \
-        -> Tuple[float, float, float, float]:
+        -> tuple[float, float, float, float]:
         """ RGBA tuple `(float, float, float, float)` """
         color = self.with_opacity(opacity)
-        return color.rgb_tuple + (color.a,)
+        return color.rgb_tuple + (cast(float, color.a),)
 
     @property
     def rgba_int_tuple(self, opacity: float | None = None) \
-        -> Tuple[int, int, int, float]:
+        -> tuple[int, int, int, float]:
         """ RGBA tuple `(int, int, int, float)` """
         color = self.with_opacity(opacity)
-        return color.rgb_int_tuple + (color.a,)
+        return color.rgb_int_tuple + (cast(float, color.a),)
 
     @property
     def rgba_list(self, opacity: float | None = None) \
-        -> List[float]:
+        -> list[float]:
         """ RGBA list `[float, float, float, float]` """
         color = self.with_opacity(opacity)
         return list(color.rgba_tuple)
 
     @property
     def rgba_int_list(self, opacity: float | None = None) \
-        -> List[int]:
+        -> list[int | float]:
         """ RGBA list `[int, int, int, float]` """
         color = self.with_opacity(opacity)
         return list(color.rgba_int_tuple)
@@ -486,15 +496,24 @@ class Color:
         color = self.with_opacity(opacity)
         return f"rgba({color.r_int}, {color.g_int}, {color.b_int}, {color.a})"
 
+    # Hexadecimal string
+    @property
+    def hex(self) -> str:
+        """ Hexadecimal string `#rrggbb` or `#rrggbbaa` """
+        if self.has_alpha:
+            return mcolors.to_hex(self.rgba_tuple, keep_alpha=True)
+        else:
+            return mcolors.to_hex(self.rgb_tuple)
+
     # HSV representation
     @property
-    def hsv_tuple(self) -> Tuple[float, float, float]:
+    def hsv_tuple(self) -> tuple[float, float, float]:
         """ HSV tuple `(float, float, float)` """
         hsv = mcolors.rgb_to_hsv(self.rgb_tuple)
         return tuple(hsv)
 
     @property
-    def hsv_list(self) -> List[float]:
+    def hsv_list(self) -> list[float]:
         """ HSV list `[float, float, float]` """
         return list(self.hsv_tuple)
 
@@ -535,10 +554,10 @@ class Color:
 
     # Operations
     def __mul__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Multiply color rgb(a) components by a scalar """
-        if not isinstance(scalar, (float, int)):
+        if not isinstance(scalar, Number):
             raise TypeError("Invalid type for multiplication.")
         if scalar < 0:
             raise ValueError("Scalar must be a non-negative number.")
@@ -549,19 +568,19 @@ class Color:
             return Color(np.clip(self.rgb_array * scalar, 0, 1))
 
     def __rmul__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Multiply color rgb(a) components by a scalar """
         return self * scalar
 
     def __truediv__(
-            self: Color, scalar: float | int
+            self: Color, scalar: Number
         ) -> Color:
         """ Divide color rgb(a) components by a scalar """
         return self * (1/scalar)
 
     # Equality
-    def __eq__(self: Color, other: Color) -> bool:
+    def __eq__(self: Color, other: object) -> bool:
         """ Check if two colors are equal """
         if not isinstance(other, Color):
             return False

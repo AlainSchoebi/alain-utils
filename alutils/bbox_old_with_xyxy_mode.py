@@ -1,6 +1,6 @@
 # Typing
 from __future__ import annotations
-from typing import Optional, List, Tuple, Any
+from typing import Optional, Any
 
 # Numpy
 import numpy as np
@@ -243,9 +243,9 @@ class BBox:
                          [self.x2(mode=mode),             self.y]])
 
 
-    def xywh_tuple(self) -> Tuple[float, float, float, float]:
+    def xywh_tuple(self) -> tuple[float, float, float, float]:
         """
-        Returns a `Tuple` (x, y, w, h).
+        Returns a `tuple` (x, y, w, h).
         """
         return list(self)
 
@@ -257,9 +257,9 @@ class BBox:
 
 
     def xyxy_tuple(self, mode: XYXYMode = XYXYMode.NORMAL) \
-          -> Tuple[float, float, float, float]:
+          -> tuple[float, float, float, float]:
         """
-        Returns a `Tuple` (x1, y1, x2, y1).
+        Returns a `tuple` (x1, y1, x2, y1).
         """
         return self.x, self.y, self.x2(mode=mode), self.y2(mode=mode)
 
@@ -289,9 +289,9 @@ class BBox:
         return np.mean(self.xyxy_matrix(mode=mode), axis=0)
 
     def center_wh_tuple(self, mode: XYXYMode = XYXYMode.NORMAL) \
-          -> Tuple[float, float, float, float]:
+          -> tuple[float, float, float, float]:
         """
-        Returns a `Tuple` (x_center, y_center, w, h).
+        Returns a `tuple` (x_center, y_center, w, h).
         """
         return *self.center(mode=mode), self.w, self.h
 
@@ -429,7 +429,7 @@ class BBox:
 
     @staticmethod
     @requires_package('matplotlib')
-    def visualize(bboxes: BBox | List[BBox],
+    def visualize(bboxes: BBox | list[BBox],
                     axes: Optional[Axes] = None,
                     savefig: Optional[str] = None,
                     show: Optional[bool] = True,

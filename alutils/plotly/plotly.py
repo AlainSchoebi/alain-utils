@@ -2,7 +2,7 @@
 import numpy as np
 
 # Python
-from typing import Dict, Any, List, List, Optional
+from typing import Any, Optional, Literal
 from pathlib import Path
 
 # Plotly
@@ -19,37 +19,43 @@ logger = get_logger(__name__)
 
 @requires_package('plotly')
 def build_plotly_plot(
-        plot: List[List[Dict[str, Any]]],
+        plot: list[list[dict[str, Any]]],
         title: Optional[str] = "",
         height: Optional[int | None] = None,
         open_browser: Optional[bool] = True,
         output_html: Optional[str | Path | None] = None,
-        hover_mode: str = 'x unified'
+        hover_mode: Literal['x', 'y', 'x unified', 'y unified',
+                            'closest', 'False'] = 'x unified',
+        bar_mode: Literal['group', 'overlay', 'stack', 'relative'] = 'group',
     ) -> None:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
     describes a subplot of the plot.
 
     Inputs:
-    - plot: `List[List[Dict[str, Any]]]` the 2D list of dictionaries describing
+    - plot: `list[list[dict[str, Any]]]` the 2D list of dictionaries describing
             the plot.
 
     Each entry in the 2D list of dictionaries MUST have the following keys:
     - title: `str` the title of the subplot.
-    - traces: `go.Scatter | go.Image ... | List[go.Scatter | go.Image | ...]`
+    - traces: `go.Scatter | go.Image ... | list[go.Scatter | go.Image | ...]`
                the trace(s) of the subplot.
 
     Each entry in the 2D list of dictionaries CAN have the optional keys:
     - rowspan: `int` the number of rows spanned by the subplot.
     - colspan: `int` the number of columns spanned by the subplot.
-    - xlim: `List[float, float]` the x-axis limits.
-    - ylim: `List[float, float]` the y-axis limits.
-    - secondary_ylim: `List[float, float]` the secondary y-axis limits.
-    - viewpoint: `Dict[str, float]` the viewpoint of the 3D plot.
+    - xlim: `list[float, float]` the x-axis limits.
+    - ylim: `list[float, float]` the y-axis limits.
+    - secondary_ylim: `list[float, float]` the secondary y-axis limits.
+    - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
     - xlabel: `str` the label of the x-axis.
     - ylabel: `str` the label of the y-axis.
+    - log_scale_x: `bool` whether to use a logarithmic scale for the x-axis.
+    - log_scale_y: `bool` whether to use a logarithmic scale for the y-axis.
+    - secondary_log_scale_y: `bool` whether to use a logarithmic scale
+                             for the secondary y-axis.
     - secondary_ylabel: `str` the label of the secondary y-axis.
-    - secondary_y_axis_trace_idx: `List[int]` the indices of which traces should
+    - secondary_y_axis_trace_idx: `list[int]` the indices of which traces should
                                   be plotted on the secondary y-axis.
     - shared_x_axis_identifier: `str` the name of the shared x-axis. Note that
                                 the name only serves as identification and the
@@ -61,7 +67,9 @@ def build_plotly_plot(
                     `True`.
     - output_html:  `str | Path | None` the path to save the plot as an HTML
                     file. Default is `None`.
-    - hover_mode:    `str` the hover mode. Default is `x unified`.
+    - hover_mode:   `x | y | x unified | y unified | closest | False`ethe hover
+                    mode for all the subplot. Default is `x unified`.
+    - bar_mode:     TODO
     """
 
     rows = len(plot)
@@ -100,8 +108,8 @@ def build_plotly_plot(
     # Boolean matrix indicating whether each subplot is "overwritten" by a
     # colspan/rowspan or not
     is_span = np.full((rows, cols), fill_value=False, dtype=bool)
-    for i in range(rows):
-        for j in range(cols):
+    for i in range(len(plot)):
+        for j in range(len(plot)):
             if j >= len(plot[i]) or plot[i][j] is None:
                 continue
             rowspan, colspan = 1, 1
@@ -236,8 +244,10 @@ def build_plotly_plot(
     for i, row in enumerate(plot):
         for j, entry in enumerate(row):
 
-            if entry is None or entry["traces"] is None:
-               continue
+            if entry is None or entry["traces"] is None or \
+               isinstance(entry["traces"], list) and len(entry["traces"]) == 0:
+                if not is_span[i, j]: axes_counter += 1
+                continue
 
             # Add subplots (multiple traces)
             if isinstance(entry["traces"], list):
@@ -264,7 +274,7 @@ def build_plotly_plot(
                 trace = entry["traces"][0]
 
             # Count number of usual x-y axes
-            if not isinstance(trace, go.Mesh3d):
+            if not isinstance(trace, (go.Table, go.Mesh3d)):
                 axes_counter += 1
                 plot[i][j]['_axes_counter'] = axes_counter
 
@@ -276,6 +286,17 @@ def build_plotly_plot(
             if 'secondary_ylabel' in entry:
                 fig.update_yaxes(title_text=entry['secondary_ylabel'],
                                  row=i+1, col=j+1, secondary_y=True)
+
+            # Axes scale
+            if 'log_sale_x' in entry and entry['log_scale_x']:
+                fig.update_xaxes(type='log', row=i+1, col=j+1)
+            if 'log_scale_y' in entry and entry['log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=False)
+            if 'secondary_log_scale_y' in entry and \
+               entry['secondary_log_scale_y']:
+                fig.update_yaxes(type='log', row=i+1, col=j+1,
+                                 secondary_y=True)
 
             # Shared x-axis
             if 'shared_x_axis_identifier' in entry:
@@ -289,12 +310,14 @@ def build_plotly_plot(
                     )
 
             # Axes limits
-            if not isinstance(trace, (go.Scatter, go.Contour, go.Image)) and \
+            if not isinstance(trace, (go.Scatter, go.Contour,
+                                      go.Image, go.Histogram)) and \
                 any([k in entry for k in ['xlim', 'ylim', 'secondary_ylim']]):
                 raise ValueError(
-                    f"Using properties `xlim`, `ylim` or `secondary_ylim` is " +
-                    f"only supported when using `Scatter`, `Contour` or " +
-                    f"`Image` plots. Found plot type `{type(trace)}`.")
+                    f"Using properties `xlim`, `ylim` or `secondary_ylim` is "
+                    f"only supported when using `Scatter`, `Contour`, `Image` "
+                    f"or `Histogram` plots. Found plot type `{type(trace)}`."
+                )
 
             if 'xlim' in entry:
                 xlim = entry['xlim']
@@ -352,16 +375,35 @@ def build_plotly_plot(
 
     # Layout
     if height is None:
-        height = 400 * len(plot)
-    fig.update_layout(title=title, showlegend=False, height=height,
-                      **scatter_3d_viewpoints, hovermode=hover_mode)
+        height = 400 * rows
+    fig.update_layout(
+        title=title,
+        showlegend=False,
+        height=height,
+        **scatter_3d_viewpoints,
+        hovermode=hover_mode,
+        barmode=bar_mode,
+    )
 
     # Save HTML file
     if output_html is not None:
+        if not Path(output_html).parent.exists():
+            logger.error(
+                f"The directory '{Path(output_html).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
+            raise FileNotFoundError(
+                f"The directory '{Path(output_html).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
         fig.write_html(str(output_html), include_mathjax='cdn')
 
     # Open browser
     if open_browser:
         fig.show()
+
+    # Log
+    logger.info(f"Successfully built Plotly plot `{title}` to `{output_html}`.")
+    logger.debug(fig.layout) # log layout for debugging purposes
 
     return None

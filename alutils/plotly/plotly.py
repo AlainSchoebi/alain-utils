@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 @requires_package('plotly')
 def build_plotly_plot(
         plot: list[list[dict[str, Any]]],
+        *,
         title: Optional[str] = "",
         height: Optional[int | None] = None,
         open_browser: Optional[bool] = True,

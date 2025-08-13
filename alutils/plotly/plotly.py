@@ -17,9 +17,11 @@ from alutils.decorators import requires_package
 from alutils.loggers import get_logger
 logger = get_logger(__name__)
 
+PlotLayout = list[list[dict[str, Any]]]
+
 @requires_package('plotly')
 def build_plotly_plot(
-        plot: list[list[dict[str, Any]]],
+        plot: PlotLayout,
         *,
         title: Optional[str] = "",
         height: Optional[int | None] = None,
@@ -51,6 +53,9 @@ def build_plotly_plot(
     - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
     - xlabel: `str` the label of the x-axis.
     - ylabel: `str` the label of the y-axis.
+    - tick_format_x: `str` the tick format for the x-axis.
+    - tick_format_y: `str` the tick format for the y-axis.
+    - tick_format_secondary_y: `str` the tick format for the secondary y-axis.
     - log_scale_x: `bool` whether to use a logarithmic scale for the x-axis.
     - log_scale_y: `bool` whether to use a logarithmic scale for the y-axis.
     - secondary_log_scale_y: `bool` whether to use a logarithmic scale
@@ -343,6 +348,25 @@ def build_plotly_plot(
                                      f"{secondary_ylim}' is invalid.")
                 fig.update_yaxes(range=secondary_ylim,
                                  row=i+1, col=j+1, secondary_y=True)
+
+            if 'tick_format_x' in entry:
+                tick_format_x = entry['tick_format_x']
+                fig.update_xaxes(
+                    tickformat=tick_format_x, row=i+1, col=j+1
+                )
+
+            if 'tick_format_y' in entry:
+                tick_format_y = entry['tick_format_y']
+                fig.update_yaxes(
+                    tickformat=tick_format_y, row=i+1, col=j+1
+                )
+
+            if 'tick_format_secondary_y' in entry:
+                tick_format_secondary_y = entry['tick_format_secondary_y']
+                fig.update_yaxes(
+                    tickformat=tick_format_secondary_y,
+                    row=i+1, col=j+1, secondary_y=True
+                )
 
             # Aspect ratio 1:1 for traces with go.Scatter as first plot
             if 'equal_aspect_ratio' in entry and ( \

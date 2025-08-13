@@ -1,8 +1,13 @@
+# Typing
+from typing import Optional
+
 # Python
-import logging
-from logging import Logger
 from pathlib import Path
 from colorama import Fore, Style
+
+# Logging
+import logging
+from logging import Logger
 
 def get_all_loggers_name() -> list[str]:
     return list(Logger.manager.loggerDict.keys())
@@ -24,11 +29,13 @@ def markdown_to_text(md: str) -> tuple[str, bool]:
     return md, bold
 
 
-def get_logger(name: str = "my_logger",
-               log_file: str | Path = None,
-               console_log_level: int = logging.DEBUG,
-               log_file_level: int = logging.DEBUG,
-               console_format: str = None) -> Logger:
+def get_logger(
+        name: str = "my_logger",
+        log_file: Optional[Path | str] = None,
+        console_log_level: int = logging.DEBUG,
+        log_file_level: int = logging.DEBUG,
+        console_format: Optional[str] = None,
+    ) -> Logger:
     """
     Gets or creates a new logger.
     """

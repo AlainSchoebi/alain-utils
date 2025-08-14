@@ -35,47 +35,74 @@ def build_plotly_plot(
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
     describes a subplot of the plot.
 
-    Inputs:
-    - plot: `list[list[dict[str, Any]]]` the 2D list of dictionaries describing
-            the plot.
+    Inputs
+    ------
+    plot: `list[list[dict[str, Any]]]`
+        The 2D list of dictionaries describing the plot.
 
+    Keys
+    ----
     Each entry in the 2D list of dictionaries MUST have the following keys:
-    - title: `str` the title of the subplot.
-    - traces: `go.Scatter | go.Image ... | list[go.Scatter | go.Image | ...]`
-               the trace(s) of the subplot.
+
+    title: `str`
+        The title of the subplot.
+    traces: `go.Scatter | go.Image ... | list[go.Scatter | go.Image | ...]`
+        The trace(s) of the subplot.
 
     Each entry in the 2D list of dictionaries CAN have the optional keys:
-    - rowspan: `int` the number of rows spanned by the subplot.
-    - colspan: `int` the number of columns spanned by the subplot.
-    - xlim: `list[float, float]` the x-axis limits.
-    - ylim: `list[float, float]` the y-axis limits.
-    - secondary_ylim: `list[float, float]` the secondary y-axis limits.
-    - viewpoint: `dict[str, float]` the viewpoint of the 3D plot.
-    - xlabel: `str` the label of the x-axis.
-    - ylabel: `str` the label of the y-axis.
-    - tick_format_x: `str` the tick format for the x-axis.
-    - tick_format_y: `str` the tick format for the y-axis.
-    - tick_format_secondary_y: `str` the tick format for the secondary y-axis.
-    - log_scale_x: `bool` whether to use a logarithmic scale for the x-axis.
-    - log_scale_y: `bool` whether to use a logarithmic scale for the y-axis.
-    - secondary_log_scale_y: `bool` whether to use a logarithmic scale
-                             for the secondary y-axis.
-    - secondary_ylabel: `str` the label of the secondary y-axis.
-    - secondary_y_axis_trace_idx: `list[int]` the indices of which traces should
-                                  be plotted on the secondary y-axis.
-    - shared_x_axis_identifier: `str` the name of the shared x-axis. Note that
-                                the name only serves as identification and the
-                                actual string is irrelevant.
 
-    Optional Inputs:
-    - title:        `str` the title of the plot.
-    - open_browser: `bool` whether to open the plot in the browser. Default is
-                    `True`.
-    - output_html:  `str | Path | None` the path to save the plot as an HTML
-                    file. Default is `None`.
-    - hover_mode:   `x | y | x unified | y unified | closest | False`ethe hover
-                    mode for all the subplot. Default is `x unified`.
-    - bar_mode:     TODO
+    rowspan: `int`
+        The number of rows spanned by the subplot.
+    colspan: `int`
+        the number of columns spanned by the subplot.
+    xlim: `list[float, float]`
+        the x-axis limits.
+    ylim: `list[float, float]`
+        the y-axis limits.
+    secondary_ylim: `list[float, float]`
+        the secondary y-axis limits.
+    viewpoint: `dict[str, float]`
+        the viewpoint of the 3D plot.
+    xlabel: `str`
+        the label of the x-axis.
+    ylabel: `str`
+        the label of the y-axis.
+    tick_format_x: `str`
+        the tick format for the x-axis.
+    tick_format_y: `str`
+        the tick format for the y-axis.
+    tick_format_secondary_y: `str`
+        the tick format for the secondary y-axis.
+    log_scale_x: `bool`
+        whether to use a logarithmic scale for the x-axis.
+    log_scale_y: `bool`
+        whether to use a logarithmic scale for the y-axis.
+    secondary_log_scale_y: `bool`
+        whether to use a logarithmic scale for the secondary y-axis.
+    secondary_ylabel: `str`
+        the label of the secondary y-axis.
+    secondary_y_axis_trace_idx: `list[int]`
+        the indices of which traces should be plotted on the secondary y-axis.
+    shared_x_axis_identifier: `str`
+        the name of the shared x-axis. Note that the name only serves as
+        identification and the actual string is irrelevant.
+    shared_y_axis_identifier: `str`
+        the name of the shared y-axis. Note that the name only serves as
+        identification and the actual string is irrelevant.
+    # TODO DO SHARED X-Y AXES joint
+
+    Optional Inputs
+    ---------------
+    title: `str`
+        The title of the plot.
+    open_browser: `bool`
+        Whether to open the plot in the browser. Default is `True`.
+    output_html: `str | Path | None`
+        The path to save the plot as an HTML file. Default is `None`.
+    hover_mode: `x | y | x unified | y unified | closest | False`
+        Hover mode for all the subplot. Default is `x unified`.
+    bar_mode: TODO
+        TODO
     """
 
     rows = len(plot)
@@ -155,6 +182,8 @@ def build_plotly_plot(
     specs, titles = [], []
     shared_x_axis_identifiers = []
     shared_x_axis_identifiers_ref_subplot = []
+    shared_y_axis_identifiers = []
+    shared_y_axis_identifiers_ref_subplot = []
     scatter_3d_viewpoints, scatter_3d_counter = {}, 0
     for i in range(rows):
         specs_row = []
@@ -238,6 +267,14 @@ def build_plotly_plot(
                 if not identifier in shared_x_axis_identifiers:
                     shared_x_axis_identifiers.append(identifier)
                     shared_x_axis_identifiers_ref_subplot.append((i, j))
+
+            # Shared y-axes
+            if 'shared_y_axis_identifier' in entry:
+                identifier = entry['shared_y_axis_identifier']
+                if not identifier in shared_y_axis_identifiers:
+                    shared_y_axis_identifiers.append(identifier)
+                    shared_y_axis_identifiers_ref_subplot.append((i, j))
+
         specs.append(specs_row)
 
     # Make plot
@@ -312,6 +349,17 @@ def build_plotly_plot(
                 if not (i, j) == (i_ref, j_ref):
                     fig.update_xaxes(
                         matches=f"x{plot[i_ref][j_ref]['_axes_counter']}",
+                        row=i+1, col=j+1
+                    )
+
+            # Shared y-axis
+            if 'shared_y_axis_identifier' in entry:
+                idx = shared_y_axis_identifiers \
+                    .index(entry['shared_y_axis_identifier'])
+                i_ref, j_ref = shared_y_axis_identifiers_ref_subplot[idx]
+                if not (i, j) == (i_ref, j_ref):
+                    fig.update_yaxes(
+                        matches=f"y{plot[i_ref][j_ref]['_axes_counter']}",
                         row=i+1, col=j+1
                     )
 

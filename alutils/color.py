@@ -13,7 +13,14 @@ from numpy.typing import NDArray
 # Matplotlib
 from matplotlib import colors as mcolors
 
+# Manim
+try:
+    from manim import ManimColor
+except:
+    pass
+
 # Utils
+from alutils.decorators import requires_package
 from alutils.types import Number
 
 class Color:
@@ -499,6 +506,11 @@ class Color:
             return mcolors.to_hex(self.rgba_tuple(), keep_alpha=True)
         else:
             return mcolors.to_hex(self.rgb_tuple)
+
+    # Manim
+    @requires_package("manim")
+    def to_manim(self) -> ManimColor:
+        return ManimColor(self.rgb_tuple)
 
     # HSV representation
     @property

@@ -61,6 +61,8 @@ def build_plotly_plot(
         the y-axis limits.
     secondary_ylim: `list[float, float]`
         the secondary y-axis limits.
+    equal_aspect_ratio: `bool`
+        whether to use equal aspect ratio for the subplot.
     viewpoint: `dict[str, float]`
         the viewpoint of the 3D plot.
     xlabel: `str`

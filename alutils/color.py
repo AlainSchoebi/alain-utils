@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 # Typing
-from typing import cast, Iterator
+from typing import cast, Iterator, ClassVar
 
 # Python
 import re
@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 
 # Matplotlib
 from matplotlib import colors as mcolors
+import matplotlib.pyplot as plt
 
 # Manim
 try:
@@ -32,6 +33,13 @@ class Color:
     The `opacity` or `alpha` value is optional and can be set to `None` if not
     needed.
     """
+
+    # Predefine colors
+    BLACK: ClassVar["Color"]
+    WHITE: ClassVar["Color"]
+    RED: ClassVar["Color"]
+    GREEN: ClassVar["Color"]
+    BLUE: ClassVar["Color"]
 
     def __init__(self, *args, **kwargs):
         """
@@ -257,12 +265,11 @@ class Color:
         elif len(args) == 0 and len(kwargs) == 1:
             if "hsv" in kwargs:
                 hsv = kwargs["hsv"]
-                if not isinstance(hsv, (tuple, list, np.ndarray)) or \
+                if not isinstance(hsv, (tuple, list)) or \
                    not len(hsv) == 3:
                     raise ValueError(
                         f"Invalid hsv argument for color constructor: " + \
-                        f"{hsv}. Expected a `tuple`, `list` or `NDArray` " + \
-                        f"of length 3."
+                        f"{hsv}. Expected a `tuple` or `list` of length 3."
                     )
                 self.__r, self.__g, self.__b = Color.from_hsv(*hsv)
 
@@ -516,8 +523,8 @@ class Color:
     @property
     def hsv_tuple(self) -> tuple[float, float, float]:
         """ HSV tuple `(float, float, float)` """
-        hsv = mcolors.rgb_to_hsv(self.rgb_tuple)
-        return tuple(hsv)
+        hsv = mcolors.rgb_to_hsv(self.rgb_tuple) # Numpy (3,)
+        return (float(hsv[0]), float(hsv[1]), float(hsv[2]))
 
     @property
     def hsv_list(self) -> list[float]:
@@ -650,9 +657,22 @@ class Color:
 
     # Color transformations
     def complementary_color(self: Color) -> Color:
-        hsv = self.hsv_list
-        hsv[2] *= 2 if hsv[2] < 0.5 else 0.5
-        return Color(hsv=hsv, opacity=self.a)
+        v = 2 if self.v < 0.5 else 0.5
+        return Color(hsv=(self.h, self.s, v), opacity=self.a)
+
+    def brighter(self: Color, factor: float = 0.5) -> Color:
+        """ Return a brighter `Color`. """
+        if factor < 0 or factor > 1:
+            raise ValueError("Factor must be between 0 and 1.")
+        return Color.interpolate(self, Color("white"), factor)
+        #v = max(0., min(1., self.v * factor))
+        #return Color(hsv=(self.h, self.s, v), opacity=self.a)
+
+    def darker(self: Color, factor: float = 0.5) -> Color:
+        """ Return a darker `Color`. """
+        if factor < 0 or factor > 1:
+            raise ValueError("Factor must be between 0 and 1.")
+        return Color.interpolate(self, Color("black"), factor)
 
     # String representation
     def __str__(self: Color) -> str:
@@ -665,3 +685,18 @@ class Color:
     def __repr__(self: Color) -> str:
         """ String representation of the color """
         return self.__str__()
+
+    def show(self: Color) -> None:
+        """ Show the color """
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.imshow([[self.rgb_array]], aspect='auto')
+        ax.set_title(str(self))
+        ax.axis('off')
+        plt.show()
+
+Color.BLACK = Color("black")
+Color.WHITE = Color("white")
+Color.RED = Color("red")
+Color.GREEN = Color("green")
+Color.BLUE = Color("blue")

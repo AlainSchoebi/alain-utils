@@ -13,6 +13,7 @@ except ImportError:
     pass
 
 # Utils
+from alutils import Color
 from alutils.decorators import requires_package
 from alutils.loggers import get_logger
 logger = get_logger(__name__)
@@ -31,6 +32,7 @@ def build_plotly_plot(
                             'closest', 'False'] = 'x unified',
         output_svg: Optional[str | Path] = None,
         bar_mode: Literal['group', 'overlay', 'stack', 'relative'] = 'group',
+        bg_color: Color = Color("#E6E6E6"),
     ) -> go.Figure:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
@@ -459,6 +461,7 @@ def build_plotly_plot(
         **scatter_3d_viewpoints,
         hovermode=hover_mode,
         barmode=bar_mode,
+        plot_bgcolor=bg_color.rgb_string(),
     )
 
     # Save HTML file

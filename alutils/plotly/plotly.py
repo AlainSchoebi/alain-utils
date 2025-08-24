@@ -29,8 +29,9 @@ def build_plotly_plot(
         output_html: Optional[str | Path | None] = None,
         hover_mode: Literal['x', 'y', 'x unified', 'y unified',
                             'closest', 'False'] = 'x unified',
+        output_svg: Optional[str | Path] = None,
         bar_mode: Literal['group', 'overlay', 'stack', 'relative'] = 'group',
-    ) -> None:
+    ) -> go.Figure:
     """
     Builds a plotly plot from a 2D list of dictionaries. Each dictionary
     describes a subplot of the plot.
@@ -473,6 +474,27 @@ def build_plotly_plot(
             )
         fig.write_html(str(output_html), include_mathjax='cdn')
 
+    # Save SVG file
+    if output_svg is not None:
+        try:
+            import kaleido
+        except ImportError as e:
+            raise ImportError(
+                "The package `kaleido` is required to export Plotly plots as "
+                "SVG files. Please install it using `pip install kaleido`."
+            )
+
+        if not Path(output_svg).parent.exists():
+            logger.error(
+                f"The directory '{Path(output_svg).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
+            raise FileNotFoundError(
+                f"The directory '{Path(output_svg).parent}' does not exist. " +
+                f"Cannot save Plotly plot."
+            )
+        fig.write_image(str(output_svg), format='svg')
+
     # Open browser
     if open_browser:
         fig.show()
@@ -481,4 +503,4 @@ def build_plotly_plot(
     logger.info(f"Successfully built Plotly plot `{title}` to `{output_html}`.")
     logger.debug(fig.layout) # log layout for debugging purposes
 
-    return None
+    return fig
